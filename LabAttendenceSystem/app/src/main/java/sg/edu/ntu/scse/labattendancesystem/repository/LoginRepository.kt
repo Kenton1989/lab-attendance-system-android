@@ -1,48 +1,47 @@
 package sg.edu.ntu.scse.labattendancesystem.repository
 
-import sg.edu.ntu.scse.labattendancesystem.network.LoginDataSource
-import sg.edu.ntu.scse.labattendancesystem.network.model.LoggedInUser
-import sg.edu.ntu.scse.labattendancesystem.network.model.Result
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
+import sg.edu.ntu.scse.labattendancesystem.network.ApiServices
+import sg.edu.ntu.scse.labattendancesystem.network.SessionManager
+import sg.edu.ntu.scse.labattendancesystem.network.TokenManager
+import sg.edu.ntu.scse.labattendancesystem.network.models.User
+
+private val LAST_LOGIN_USERNAME = stringPreferencesKey("last_login_username")
 
 /**
  * Class that requests authentication and user information from the remote data source and
  * maintains an in-memory cache of login status and user credentials information.
  */
 
-class LoginRepository(val dataSource: LoginDataSource) {
+class LoginRepository(private val dataStore: DataStore<Preferences>) : BaseRepository() {
+    private val tokenManager = TokenManager(dataStore)
+    private val sessionManager = SessionManager(tokenManager, ApiServices.token)
 
-    // in-memory cache of the loggedInUser object
-    var user: LoggedInUser? = null
-        private set
+    val lastLoginUsername: Flow<String?> get() = readDataStore(LAST_LOGIN_USERNAME)
 
-    val isLoggedIn: Boolean
-        get() = user != null
-
-    init {
-        // If user credentials will be cached in local storage, it is recommended it be encrypted
-        // @see https://developer.android.com/training/articles/keystore
-        user = null
-    }
-
-    fun logout() {
-        user = null
-        dataSource.logout()
-    }
-
-    fun login(username: String, password: String): Result<LoggedInUser> {
-        // handle login
-        val result = dataSource.login(username, password)
-
-        if (result is Result.Success) {
-            setLoggedInUser(result.data)
+    fun login(username: String, password: String): Flow<Result<Boolean>> {
+        return load { sessionManager.login(username, password) }.onEach {
+            if (it is Result.Success) writeDataStore(LAST_LOGIN_USERNAME, username)
         }
-
-        return result
     }
 
-    private fun setLoggedInUser(loggedInUser: LoggedInUser) {
-        this.user = loggedInUser
-        // If user credentials will be cached in local storage, it is recommended it be encrypted
-        // @see https://developer.android.com/training/articles/keystore
+    fun logout(): Flow<Result<Boolean>> {
+        return load { sessionManager.logout() }
+    }
+
+    fun currentUser(): Flow<Result<User?>> {
+        return load { sessionManager.currentUser() }
+    }
+
+    private fun <T> readDataStore(key: Preferences.Key<T>) = dataStore.data.map { it[key] }
+
+    private suspend fun <T> writeDataStore(key: Preferences.Key<T>, value: T) {
+        dataStore.edit { it[key] = value }
     }
 }

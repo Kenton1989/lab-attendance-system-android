@@ -1,22 +1,25 @@
 package sg.edu.ntu.scse.labattendancesystem.ui.login
 
 import android.app.Activity
-import androidx.lifecycle.Observer
+import android.content.Intent
 import androidx.lifecycle.ViewModelProvider
 import android.os.Bundle
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
 import android.view.View
 import android.view.inputmethod.EditorInfo
+import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.Toast
+import androidx.databinding.DataBindingUtil
+import sg.edu.ntu.scse.labattendancesystem.ItemDetailHostActivity
+import sg.edu.ntu.scse.labattendancesystem.R
 import sg.edu.ntu.scse.labattendancesystem.databinding.ActivityLoginBinding
 
-import sg.edu.ntu.scse.labattendancesystem.R
 import sg.edu.ntu.scse.labattendancesystem.viewmodels.ViewModelFactory
-import sg.edu.ntu.scse.labattendancesystem.viewmodels.login.LoggedInUserView
 import sg.edu.ntu.scse.labattendancesystem.viewmodels.login.LoginViewModel
 
 class LoginActivity : AppCompatActivity() {
@@ -24,96 +27,107 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var loginViewModel: LoginViewModel
     private lateinit var binding: ActivityLoginBinding
 
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        binding = ActivityLoginBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        binding = DataBindingUtil.setContentView(this, R.layout.activity_login)
+
+        loginViewModel =
+            ViewModelProvider(this, ViewModelFactory(application))[LoginViewModel::class.java]
+
+        binding.viewModel = loginViewModel
 
         val username = binding.username
         val password = binding.password
         val login = binding.login
         val loading = binding.loading
 
-        loginViewModel = ViewModelProvider(this, ViewModelFactory())
-            .get(LoginViewModel::class.java)
+        Log.d(TAG, "setup allowLogin observer")
+        loginViewModel.allowLogin.observe(this) {
+            Log.d(TAG, "enable edit: $it")
+            login.isEnabled = it
+        }
 
-        loginViewModel.loginFormState.observe(this@LoginActivity, Observer {
-            val loginState = it ?: return@Observer
-
-            // disable login button unless both username / password is valid
-            login.isEnabled = loginState.isDataValid
-
-            if (loginState.usernameError != null) {
-                username.error = getString(loginState.usernameError)
+        loginViewModel.lastLoginUsername.observe(this) {
+            it?.apply {
+                username.setText(it)
             }
-            if (loginState.passwordError != null) {
-                password.error = getString(loginState.passwordError)
-            }
-        })
+        }
 
-        loginViewModel.loginResult.observe(this@LoginActivity, Observer {
-            val loginResult = it ?: return@Observer
-
-            loading.visibility = View.GONE
-            if (loginResult.error != null) {
-                showLoginFailed(loginResult.error)
+        loginViewModel.loginFormState.observe(this) {
+            it?.apply {
+                if (usernameError != null) {
+                    username.error = getString(usernameError)
+                }
+                if (passwordError != null) {
+                    password.error = getString(passwordError)
+                }
             }
-            if (loginResult.success != null) {
-                updateUiWithUser(loginResult.success)
-            }
-            setResult(Activity.RESULT_OK)
+        }
 
-            //Complete and destroy login activity once successful
-            finish()
-        })
+        loginViewModel.loginResult.observe(this) {
+            Log.d(TAG, it.toString())
+            it?.apply {
+                if (!isLoading)
+                    loading.visibility = View.GONE
+
+                if (errorMsg != null)
+                    showLoginFailed(errorMsg)
+
+                if (success)
+                    goToMainApp()
+            }
+        }
+
+        loginViewModel.defaultUsernameList.observe(this) {
+            val nameList = it ?: listOf()
+            val adapter = ArrayAdapter(
+                this@LoginActivity,
+                android.R.layout.simple_dropdown_item_1line,
+                nameList
+            )
+            username.setAdapter(adapter)
+        }
 
         username.afterTextChanged {
-            loginViewModel.loginDataChanged(
+            loginViewModel.updateLoginForm(
                 username.text.toString(),
                 password.text.toString()
             )
         }
 
-        password.apply {
-            afterTextChanged {
-                loginViewModel.loginDataChanged(
-                    username.text.toString(),
-                    password.text.toString()
-                )
-            }
-
-            setOnEditorActionListener { _, actionId, _ ->
-                when (actionId) {
-                    EditorInfo.IME_ACTION_DONE ->
-                        loginViewModel.login(
-                            username.text.toString(),
-                            password.text.toString()
-                        )
-                }
-                false
-            }
-
-            login.setOnClickListener {
-                loading.visibility = View.VISIBLE
-                loginViewModel.login(username.text.toString(), password.text.toString())
-            }
+        password.afterTextChanged {
+            loginViewModel.updateLoginForm(
+                username.text.toString(),
+                password.text.toString()
+            )
         }
+
+        login.setOnClickListener { performLogin() }
     }
 
-    private fun updateUiWithUser(model: LoggedInUserView) {
-        val welcome = getString(R.string.welcome)
-        val displayName = model.displayName
-        // TODO : initiate successful logged in experience
-        Toast.makeText(
-            applicationContext,
-            "$welcome $displayName",
-            Toast.LENGTH_LONG
-        ).show()
+    private fun performLogin() {
+        binding.loading.visibility = View.VISIBLE
+        loginViewModel.login(
+            binding.username.text.toString(),
+            binding.password.text.toString()
+        )
     }
 
     private fun showLoginFailed(@StringRes errorString: Int) {
         Toast.makeText(applicationContext, errorString, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun goToMainApp() {
+        val intent = Intent(this, ItemDetailHostActivity::class.java)
+        startActivity(intent)
+        setResult(Activity.RESULT_OK)
+        finish()
+    }
+
+    companion object {
+        val TAG: String = LoginActivity::class.java.simpleName
     }
 }
 

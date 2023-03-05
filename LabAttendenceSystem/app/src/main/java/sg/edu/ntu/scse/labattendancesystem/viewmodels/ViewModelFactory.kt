@@ -1,16 +1,15 @@
 package sg.edu.ntu.scse.labattendancesystem.viewmodels
 
+import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import sg.edu.ntu.scse.labattendancesystem.network.LoginDataSource
-import sg.edu.ntu.scse.labattendancesystem.repository.LoginRepository
+import sg.edu.ntu.scse.labattendancesystem.LabAttendanceSystemApplication
 import sg.edu.ntu.scse.labattendancesystem.viewmodels.login.LoginViewModel
 
-/**
- * ViewModel provider factory to instantiate LoginViewModel.
- * Required given LoginViewModel has a non-empty constructor
- */
-class ViewModelFactory : ViewModelProvider.Factory {
+class ViewModelFactory(val app: Application) : ViewModelProvider.Factory {
+
+    private val _app = app as? LabAttendanceSystemApplication
+        ?: throw IllegalArgumentException("expecting an LabAttendanceSystemApplication")
 
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -23,10 +22,6 @@ class ViewModelFactory : ViewModelProvider.Factory {
     }
 
     private fun makeLoginViewModel(): LoginViewModel {
-        return LoginViewModel(
-            loginRepository = LoginRepository(
-                dataSource = LoginDataSource()
-            )
-        )
+        return LoginViewModel(_app)
     }
 }
