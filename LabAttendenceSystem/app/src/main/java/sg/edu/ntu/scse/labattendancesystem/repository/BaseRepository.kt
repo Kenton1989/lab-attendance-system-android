@@ -31,18 +31,25 @@ abstract class BaseRepository {
                 response?.errorBody()?.let { error ->
                     error.close()
                     val parsedError: String = error.charStream().readText()
-                    emit(Result.Failure(parsedError, e.code()))
+                    emit(Result.Failure(e, parsedError, e.code()))
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Wrapped unhandled exception")
                 emit(
                     Result.Failure(
+                        e,
                         e.message ?: e.toString(),
                         HttpURLConnection.HTTP_INTERNAL_ERROR
                     )
                 )
             }
-        } ?: emit(Result.Failure("request timeout", HttpURLConnection.HTTP_CLIENT_TIMEOUT))
+        } ?: emit(
+            Result.Failure(
+                OperationTimeoutError(),
+                "operation timeout",
+                HttpURLConnection.HTTP_CLIENT_TIMEOUT
+            )
+        )
 
     }.flowOn(Dispatchers.IO)
 }

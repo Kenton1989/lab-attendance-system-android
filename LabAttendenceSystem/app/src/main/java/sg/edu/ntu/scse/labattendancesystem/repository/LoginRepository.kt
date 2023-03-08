@@ -25,17 +25,17 @@ class LoginRepository(private val dataStore: DataStore<Preferences>) : BaseRepos
 
     val lastLoginUsername: Flow<String?> get() = readDataStore(LAST_LOGIN_USERNAME)
 
-    fun login(username: String, password: String): Flow<Result<Boolean>> {
+    fun login(username: String, password: String): Flow<Result<Unit>> {
         return load { sessionManager.login(username, password) }.onEach {
             if (it is Result.Success) writeDataStore(LAST_LOGIN_USERNAME, username)
         }
     }
 
-    fun logout(): Flow<Result<Boolean>> {
+    fun logout(): Flow<Result<Unit>> {
         return load { sessionManager.logout() }
     }
 
-    fun currentUser(): Flow<Result<User?>> {
+    fun currentUser(): Flow<Result<User>> {
         return load { sessionManager.currentUser() }
     }
 

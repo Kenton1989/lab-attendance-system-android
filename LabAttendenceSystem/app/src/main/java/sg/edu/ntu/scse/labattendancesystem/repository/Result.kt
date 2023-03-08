@@ -12,6 +12,7 @@ sealed class Result<out T>() {
     ): Result<T>()
 
     data class Failure(
+        val error: Throwable? = null,
         val errorMessage: String,
         val errorCode: Int,
     ): Result<Nothing>()

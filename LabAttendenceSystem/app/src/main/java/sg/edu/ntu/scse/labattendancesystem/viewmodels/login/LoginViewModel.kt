@@ -10,6 +10,8 @@ import sg.edu.ntu.scse.labattendancesystem.LabAttendanceSystemApplication
 import sg.edu.ntu.scse.labattendancesystem.repository.Result
 
 import sg.edu.ntu.scse.labattendancesystem.R
+import sg.edu.ntu.scse.labattendancesystem.network.UnauthenticatedError
+import sg.edu.ntu.scse.labattendancesystem.network.UserIsNotLabError
 import sg.edu.ntu.scse.labattendancesystem.repository.LoginRepository
 import sg.edu.ntu.scse.labattendancesystem.viewmodels.BaseViewModel
 
@@ -27,24 +29,22 @@ class LoginViewModel(app: LabAttendanceSystemApplication) : BaseViewModel() {
         form?.isDataValid ?: false && !(result?.isLoading ?: false)
     }
 
-    val lastLoginUsername: LiveData<String?> =loginRepo.lastLoginUsername.asLiveData()
+    val lastLoginUsername: LiveData<String?> = loginRepo.lastLoginUsername.asLiveData()
 
     val defaultUsernameList: LiveData<List<String>> = MutableLiveData(DEFAULT_LAB_USERNAMES)
 
-    init {
-        Log.d(TAG, allowLogin.toString())
-    }
-
     fun login(username: String, password: String) {
         _loginResult.load {
-            loginRepo.login(username, password).map { isSuccessful ->
-                Log.i(TAG, isSuccessful.toString())
-                when (isSuccessful) {
+            loginRepo.login(username, password).map { result ->
+                Log.i(TAG, result.toString())
+                when (result) {
                     Result.Loading -> LoginResult(isLoading = true)
-                    is Result.Failure -> LoginResult(errorMsg = R.string.unknown_login_error)
-                    is Result.Success ->
-                        if (isSuccessful.data) LoginResult(success = true)
-                        else LoginResult(errorMsg = R.string.incorrect_username_or_password)
+                    is Result.Success -> LoginResult(success = true)
+                    is Result.Failure -> when (result.error) {
+                        is UnauthenticatedError -> LoginResult(errorMsg = R.string.incorrect_username_or_password)
+                        is UserIsNotLabError -> LoginResult(errorMsg = R.string.user_is_not_lab)
+                        else -> LoginResult(errorMsg = R.string.unknown_login_error)
+                    }
                 }
             }
         }
