@@ -4,15 +4,15 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.asLiveData
-import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.map
 import sg.edu.ntu.scse.labattendancesystem.LabAttendanceSystemApplication
 import sg.edu.ntu.scse.labattendancesystem.repository.Result
 
 import sg.edu.ntu.scse.labattendancesystem.R
 import sg.edu.ntu.scse.labattendancesystem.network.UnauthenticatedError
-import sg.edu.ntu.scse.labattendancesystem.network.UserIsNotLabError
+import sg.edu.ntu.scse.labattendancesystem.repository.InvalidLabRoomNumber
 import sg.edu.ntu.scse.labattendancesystem.repository.LoginRepository
+import sg.edu.ntu.scse.labattendancesystem.repository.UserIsNotLabError
 import sg.edu.ntu.scse.labattendancesystem.viewmodels.BaseViewModel
 
 
@@ -33,16 +33,17 @@ class LoginViewModel(app: LabAttendanceSystemApplication) : BaseViewModel() {
 
     val defaultUsernameList: LiveData<List<String>> = MutableLiveData(DEFAULT_LAB_USERNAMES)
 
-    fun login(username: String, password: String) {
+    fun labLogin(username: String, password: String, roomNo: Int) {
         _loginResult.load {
-            loginRepo.login(username, password).map { result ->
+            loginRepo.labLogin(username, password, roomNo).map { result ->
                 Log.i(TAG, result.toString())
                 when (result) {
                     Result.Loading -> LoginResult(isLoading = true)
                     is Result.Success -> LoginResult(success = true)
                     is Result.Failure -> when (result.error) {
                         is UnauthenticatedError -> LoginResult(errorMsg = R.string.incorrect_username_or_password)
-                        is UserIsNotLabError -> LoginResult(errorMsg = R.string.user_is_not_lab)
+                        is UserIsNotLabError -> LoginResult(errorMsg = R.string.user_is_not_lab_error)
+                        is InvalidLabRoomNumber -> LoginResult(errorMsg = R.string.invalid_room_number_error)
                         else -> LoginResult(errorMsg = R.string.unknown_login_error)
                     }
                 }

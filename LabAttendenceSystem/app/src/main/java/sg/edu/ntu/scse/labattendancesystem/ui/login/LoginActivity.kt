@@ -10,7 +10,6 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.util.Log
 import android.view.View
-import android.view.inputmethod.EditorInfo
 import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.Toast
@@ -45,7 +44,6 @@ class LoginActivity : AppCompatActivity() {
 
         Log.d(TAG, "setup allowLogin observer")
         loginViewModel.allowLogin.observe(this) {
-            Log.d(TAG, "enable edit: $it")
             login.isEnabled = it
         }
 
@@ -109,14 +107,15 @@ class LoginActivity : AppCompatActivity() {
 
     private fun performLogin() {
         binding.loading.visibility = View.VISIBLE
-        loginViewModel.login(
+        loginViewModel.labLogin(
             binding.username.text.toString(),
-            binding.password.text.toString()
+            binding.password.text.toString(),
+            binding.roomNo.text.toString().toInt()
         )
     }
 
     private fun showLoginFailed(@StringRes errorString: Int) {
-        Toast.makeText(applicationContext, errorString, Toast.LENGTH_SHORT).show()
+        Toast.makeText(applicationContext, errorString, Toast.LENGTH_LONG).show()
     }
 
     private fun goToMainApp() {

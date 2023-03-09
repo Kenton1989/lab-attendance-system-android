@@ -14,9 +14,21 @@ class SessionManager(
 
     /**
      * Perform login process and store the token.
+     * @param enforceLogin if false (default), when currently login user is the same to
+     *        the user to login, the login process will be skipped
      * @throws UnauthenticatedError if username or password is incorrect
      */
-    suspend fun login(username: String, password: String) {
+    suspend fun login(username: String, password: String, enforceLogin: Boolean = false) {
+        if (!enforceLogin) {
+            try {
+                val user = getCurrentUser()
+                if (user.username == username) return
+            } catch (_: UnauthenticatedError) {
+                // do nothing, continue login
+            }
+        }
+
+
         val authPayload = "$username:$password"
         val data = authPayload.toByteArray()
         val base64 = Base64.encodeToString(data, Base64.NO_WRAP)
@@ -25,7 +37,7 @@ class SessionManager(
             val tokenResp = api.createToken("Basic $base64")
             tokenManager.saveToken(tokenResp.token)
         } catch (e: HttpException) {
-            throwUnauthorizedError(e)
+            checkUnauthorizedError(e)
             throw e
         }
     }
@@ -37,8 +49,9 @@ class SessionManager(
     suspend fun logout() {
         try {
             api.revokeToken(tokenHeader())
+            tokenManager.clearToken()
         } catch (e: HttpException) {
-            throwUnauthorizedError(e)
+            checkUnauthorizedError(e)
             throw e
         }
     }
@@ -48,11 +61,11 @@ class SessionManager(
      * @return return current login user
      * @throws UnauthenticatedError if user hasn't login
      */
-    suspend fun currentUser(): User {
+    suspend fun getCurrentUser(): User {
         try {
-            return api.currentUser(tokenHeader())
+            return api.getCurrentUser(tokenHeader())
         } catch (e: HttpException) {
-            throwUnauthorizedError(e)
+            checkUnauthorizedError(e)
             throw e
         }
     }
@@ -66,7 +79,7 @@ class SessionManager(
         try {
             return api.getLab(tokenHeader(), id)
         } catch (e: HttpException) {
-            throwUnauthorizedError(e)
+            checkUnauthorizedError(e)
             throw e
         }
     }
@@ -76,7 +89,7 @@ class SessionManager(
         return "Token $token"
     }
 
-    private suspend fun throwUnauthorizedError(e: HttpException) {
+    private suspend fun checkUnauthorizedError(e: HttpException) {
         if (e.code() == HttpURLConnection.HTTP_UNAUTHORIZED) {
             tokenManager.clearToken()
             throw UnauthenticatedError()

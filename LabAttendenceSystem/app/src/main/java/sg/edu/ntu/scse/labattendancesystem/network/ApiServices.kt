@@ -13,7 +13,7 @@ class ApiServices() {
     companion object {
         val token: AuthApi by lazy { buildRetrofit().create(AuthApi::class.java) }
 
-        private const val baseUrl = "http://172.21.148.198"
+        private const val baseUrl = "http://172.21.148.198/api/v1/"
 
         private val moshi = Moshi.Builder()
             .add(KotlinJsonAdapterFactory())

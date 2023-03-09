@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withTimeoutOrNull
 import retrofit2.HttpException
+import retrofit2.Response
 import java.net.HttpURLConnection
 
 abstract class BaseRepository {
@@ -24,9 +25,14 @@ abstract class BaseRepository {
         withTimeoutOrNull(HTTP_REQUEST_TIMEOUT_MS) {
             try {
                 val result = call()
+
+                if (result is Response<*> && result.code() >= 400) {
+                    throw HttpException(result)
+                }
+
                 emit(Result.Success(result))
             } catch (e: HttpException) {
-                Log.e(TAG, "Wrapped unhandled HTTP exception")
+                Log.e(TAG, "Wrapped unhandled HTTP exception $e")
                 val response = e.response()
                 response?.errorBody()?.let { error ->
                     error.close()

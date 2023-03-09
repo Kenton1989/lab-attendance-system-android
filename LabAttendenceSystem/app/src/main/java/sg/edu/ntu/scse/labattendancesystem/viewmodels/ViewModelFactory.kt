@@ -4,6 +4,9 @@ import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import sg.edu.ntu.scse.labattendancesystem.LabAttendanceSystemApplication
+import sg.edu.ntu.scse.labattendancesystem.network.ApiServices
+import sg.edu.ntu.scse.labattendancesystem.network.SessionManager
+import sg.edu.ntu.scse.labattendancesystem.network.TokenManager
 import sg.edu.ntu.scse.labattendancesystem.viewmodels.login.LoginViewModel
 
 class ViewModelFactory(val app: Application) : ViewModelProvider.Factory {
@@ -23,5 +26,9 @@ class ViewModelFactory(val app: Application) : ViewModelProvider.Factory {
 
     private fun makeLoginViewModel(): LoginViewModel {
         return LoginViewModel(_app)
+    }
+
+    fun getSM(): SessionManager {
+        return SessionManager(TokenManager(_app.loginPreferenceDataStore), ApiServices.token)
     }
 }
