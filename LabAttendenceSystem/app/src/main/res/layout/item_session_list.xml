@@ -1,0 +1,72 @@
+
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    app:cardElevation="4dp"
+    app:strokeWidth="1dp"
+    app:cardCornerRadius="10dp"
+    app:strokeColor="@android:color/background_light">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <View
+            android:id="@+id/colorful_border"
+            android:layout_width="10dp"
+            android:layout_height="0dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:background="?attr/colorPrimary" />
+
+        <TextView
+            android:id="@+id/course_group"
+            style="@style/TextAppearance.AppCompat.Title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:padding="8dp"
+            android:textColor="@color/black"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toEndOf="@+id/colorful_border"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="@string/title_placeholder" />
+
+<!--        <TextView-->
+<!--            android:id="@+id/session_name"-->
+<!--            style="@style/TextAppearance.AppCompat.Caption"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_marginStart="8dp"-->
+<!--            android:padding="8dp"-->
+<!--            android:text="line1"-->
+<!--            android:textColor="?android:textColorSecondary"-->
+<!--            app:layout_constraintStart_toEndOf="@+id/session_time"-->
+<!--            app:layout_constraintTop_toBottomOf="@+id/course_group" />-->
+
+        <TextView
+            android:id="@+id/session_time"
+            style="@style/TextAppearance.AppCompat.Caption"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:ellipsize="end"
+            android:padding="8dp"
+            android:singleLine="true"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toEndOf="@+id/colorful_border"
+            app:layout_constraintTop_toBottomOf="@+id/course_group"
+            tools:text="10:30 ~ 12:30" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</com.google.android.material.card.MaterialCardView>

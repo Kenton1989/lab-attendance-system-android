@@ -2,27 +2,26 @@ package sg.edu.ntu.scse.labattendancesystem.repository
 
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.withTimeout
 import retrofit2.HttpException
 import retrofit2.Response
 import java.net.HttpURLConnection
 
 abstract class BaseRepository {
     companion object {
-        const val HTTP_REQUEST_TIMEOUT_MS = 10000L
         private val TAG = BaseRepository::class.java.simpleName
+        private const val REQUEST_TIMEOUT_MS = 10000L
     }
+
 
     /**
      * Helper function for tracing the loading status of suspended function
      */
     fun <T> load(call: suspend () -> T): Flow<Result<T>> = flow {
         emit(Result.Loading)
-
-        withTimeoutOrNull(HTTP_REQUEST_TIMEOUT_MS) {
+        withTimeout(REQUEST_TIMEOUT_MS) {
             try {
                 val result = call()
 
@@ -39,8 +38,8 @@ abstract class BaseRepository {
                     val parsedError: String = error.charStream().readText()
                     emit(Result.Failure(e, parsedError, e.code()))
                 }
-            } catch (e: Exception) {
-                Log.e(TAG, "Wrapped unhandled exception")
+            } catch (e: Throwable) {
+                Log.e(TAG, "Wrapped unhandled exception $e")
                 emit(
                     Result.Failure(
                         e,
@@ -49,13 +48,23 @@ abstract class BaseRepository {
                     )
                 )
             }
-        } ?: emit(
-            Result.Failure(
-                OperationTimeoutError(),
-                "operation timeout",
-                HttpURLConnection.HTTP_CLIENT_TIMEOUT
+        }
+    }.catch {
+        if (it is TimeoutCancellationException) {
+            Log.e(TAG, "operation timeout: $it")
+            emit(
+                Result.Failure(
+                    OperationTimeoutError(),
+                    "operation timeout",
+                    HttpURLConnection.HTTP_CLIENT_TIMEOUT
+                )
             )
-        )
+        } else {
+            throw it
+        }
+    }.flowOn(Dispatchers.IO).onEach {
+        Log.d(TAG, "result: $it")
+    }
 
-    }.flowOn(Dispatchers.IO)
+
 }

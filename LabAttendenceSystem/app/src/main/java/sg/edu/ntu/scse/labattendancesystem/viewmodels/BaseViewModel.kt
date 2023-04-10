@@ -30,7 +30,6 @@ abstract class BaseViewModel : ViewModel() {
                 }
             }
         }
-
         return this
     }
 

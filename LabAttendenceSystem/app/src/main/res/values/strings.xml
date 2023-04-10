@@ -9,10 +9,15 @@
     <string name="welcome">"Welcome !"</string>
     <string name="invalid_username">Not a valid username</string>
     <string name="invalid_password">Not a valid password</string>
+    <string name="invalid_room_number">Not a valid room number</string>
     <string name="login_failed">"Login failed"</string>
     <string name="incorrect_username_or_password">Incorrect username or password.</string>
+    <string name="network_request_timeout_error">Request timeout. Please check your network and retry.</string>
     <string name="user_is_not_lab_error">Only lab accounts are allowed login this check-in app.</string>
-    <string name="invalid_room_number_error">Invalid lab room number</string>
+    <string name="invalid_lab_room_number_error">Invalid lab room number</string>
     <string name="unknown_login_error">Unknown error occurred during login. Please check your network and retry.</string>
     <string name="prompt_room_no">Room No.</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="title_placeholder">Title</string>
 </resources>

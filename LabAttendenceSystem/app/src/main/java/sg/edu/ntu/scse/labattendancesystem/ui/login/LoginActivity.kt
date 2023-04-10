@@ -14,7 +14,7 @@ import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.Toast
 import androidx.databinding.DataBindingUtil
-import sg.edu.ntu.scse.labattendancesystem.ItemDetailHostActivity
+import sg.edu.ntu.scse.labattendancesystem.ui.main.MainActivity
 import sg.edu.ntu.scse.labattendancesystem.R
 import sg.edu.ntu.scse.labattendancesystem.databinding.ActivityLoginBinding
 
@@ -24,13 +24,14 @@ import sg.edu.ntu.scse.labattendancesystem.viewmodels.login.LoginViewModel
 class LoginActivity : AppCompatActivity() {
 
     private lateinit var loginViewModel: LoginViewModel
-    private lateinit var binding: ActivityLoginBinding
+    private var _binding: ActivityLoginBinding? = null
+    private val binding: ActivityLoginBinding get() = _binding!!
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        binding = DataBindingUtil.setContentView(this, R.layout.activity_login)
+        _binding = DataBindingUtil.setContentView(this, R.layout.activity_login)
 
         loginViewModel =
             ViewModelProvider(this, ViewModelFactory(application))[LoginViewModel::class.java]
@@ -39,6 +40,7 @@ class LoginActivity : AppCompatActivity() {
 
         val username = binding.username
         val password = binding.password
+        val roomNo = binding.roomNo
         val login = binding.login
         val loading = binding.loading
 
@@ -53,6 +55,12 @@ class LoginActivity : AppCompatActivity() {
             }
         }
 
+        loginViewModel.lastLoginRoomNumber.observe(this) {
+            it?.apply {
+                roomNo.setText(it.toString())
+            }
+        }
+
         loginViewModel.loginFormState.observe(this) {
             it?.apply {
                 if (usernameError != null) {
@@ -61,6 +69,9 @@ class LoginActivity : AppCompatActivity() {
                 if (passwordError != null) {
                     password.error = getString(passwordError)
                 }
+                if (roomNoError != null) {
+                    roomNo.error = getString(roomNoError)
+                }
             }
         }
 
@@ -68,7 +79,7 @@ class LoginActivity : AppCompatActivity() {
             Log.d(TAG, it.toString())
             it?.apply {
                 if (!isLoading)
-                    loading.visibility = View.GONE
+                    hideLoadingSpinner()
 
                 if (errorMsg != null)
                     showLoginFailed(errorMsg)
@@ -88,25 +99,35 @@ class LoginActivity : AppCompatActivity() {
             username.setAdapter(adapter)
         }
 
-        username.afterTextChanged {
-            loginViewModel.updateLoginForm(
-                username.text.toString(),
-                password.text.toString()
-            )
+        loginViewModel.isAlreadyLogin.observe(this) { isLogin->
+            if (isLogin == null) {
+                showLoadingSpinner()
+            } else if (isLogin) {
+                goToMainApp()
+            } else {
+                hideLoadingSpinner()
+            }
         }
 
-        password.afterTextChanged {
-            loginViewModel.updateLoginForm(
-                username.text.toString(),
-                password.text.toString()
-            )
-        }
+        username.afterTextChanged { validateForm() }
+
+        password.afterTextChanged { validateForm() }
+
+        roomNo.afterTextChanged { validateForm() }
 
         login.setOnClickListener { performLogin() }
     }
 
-    private fun performLogin() {
+    private fun hideLoadingSpinner() {
+        binding.loading.visibility = View.GONE
+    }
+
+    private fun showLoadingSpinner() {
         binding.loading.visibility = View.VISIBLE
+    }
+
+    private fun performLogin() {
+        showLoadingSpinner()
         loginViewModel.labLogin(
             binding.username.text.toString(),
             binding.password.text.toString(),
@@ -118,11 +139,24 @@ class LoginActivity : AppCompatActivity() {
         Toast.makeText(applicationContext, errorString, Toast.LENGTH_LONG).show()
     }
 
+    private fun validateForm() {
+        loginViewModel.updateLoginForm(
+            binding.username.text.toString(),
+            binding.password.text.toString(),
+            binding.roomNo.text.toString(),
+        )
+    }
+
     private fun goToMainApp() {
-        val intent = Intent(this, ItemDetailHostActivity::class.java)
+        val intent = Intent(this, MainActivity::class.java)
         startActivity(intent)
         setResult(Activity.RESULT_OK)
         finish()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        _binding = null
     }
 
     companion object {

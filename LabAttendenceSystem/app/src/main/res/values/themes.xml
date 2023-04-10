@@ -14,7 +14,7 @@
         <!-- Customize your theme here. -->
     </style>
 
-    <style name="Theme.LabAttendanceSystem.NoActionBar">
+    <style name="Theme.LabAttendanceSystem.NoActionBar" parent="Theme.LabAttendanceSystem">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
     </style>

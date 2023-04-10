@@ -4,8 +4,8 @@ import android.util.Base64
 import kotlinx.coroutines.flow.*
 import retrofit2.HttpException
 import sg.edu.ntu.scse.labattendancesystem.network.api.AuthApi
-import sg.edu.ntu.scse.labattendancesystem.network.models.Lab
-import sg.edu.ntu.scse.labattendancesystem.network.models.User
+import sg.edu.ntu.scse.labattendancesystem.network.models.LabResp
+import sg.edu.ntu.scse.labattendancesystem.network.models.UserResp
 import java.net.HttpURLConnection
 
 class SessionManager(
@@ -61,7 +61,7 @@ class SessionManager(
      * @return return current login user
      * @throws UnauthenticatedError if user hasn't login
      */
-    suspend fun getCurrentUser(): User {
+    suspend fun getCurrentUser(): UserResp {
         try {
             return api.getCurrentUser(tokenHeader())
         } catch (e: HttpException) {
@@ -72,14 +72,17 @@ class SessionManager(
 
     /**
      * Get a lab.
-     * @return return the retrieved lab
+     * @return return current login lab user
      * @throws UnauthenticatedError if user hasn't login
+     * @throws UserIsNotLabError if user is not a lab user
      */
-    suspend fun getLab(id: Long): Lab {
+    suspend fun getCurrentLab(): LabResp {
         try {
-            return api.getLab(tokenHeader(), id)
+            val user = getCurrentUser()
+            return api.getLab(tokenHeader(), user.id!!)
         } catch (e: HttpException) {
             checkUnauthorizedError(e)
+            checkUserIsNotLabError(e)
             throw e
         }
     }
@@ -93,6 +96,12 @@ class SessionManager(
         if (e.code() == HttpURLConnection.HTTP_UNAUTHORIZED) {
             tokenManager.clearToken()
             throw UnauthenticatedError()
+        }
+    }
+    private suspend fun checkUserIsNotLabError(e: HttpException) {
+        if (e.code() == HttpURLConnection.HTTP_NOT_FOUND) {
+            tokenManager.clearToken()
+            throw UserIsNotLabError()
         }
     }
 }
