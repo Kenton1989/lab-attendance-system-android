@@ -70,10 +70,10 @@ class MainRepository(app: LabAttendanceSystemApplication) : BaseRepository() {
         var i = 1
         while (startTime <= lastSlotBeg) {
             val endTime = startTime + Duration.ofHours(2)
-            val randId: Long = i.toLong()
+            val randId: Int = i.toInt()
             res.add(
                 Session(
-                    id = startTime.toEpochSecond(ZoneOffset.UTC),
+                    id = startTime.toEpochSecond(ZoneOffset.UTC).toInt(),
                     group = Group(
                         id = randId,
                         name = "GRP$i",

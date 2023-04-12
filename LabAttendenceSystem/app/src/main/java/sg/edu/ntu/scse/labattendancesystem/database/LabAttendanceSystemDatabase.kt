@@ -5,11 +5,21 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
-import sg.edu.ntu.scse.labattendancesystem.database.models.Course
+import sg.edu.ntu.scse.labattendancesystem.database.models.*
 
-@Database(entities = [Course::class], version = 1, exportSchema = false)
+@Database(
+    version = 1,
+    exportSchema = false,
+    entities = [
+        DbUser::class, DbLab::class, DbCourse::class, DbGroup::class, DbSession::class,
+        DbGroupStudent::class, DbGroupTeacher::class, DbMakeUpSession::class,
+        DbStudentAttendance::class, DbTeacherAttendance::class,
+    ]
+)
 @TypeConverters(Converters::class)
 abstract class LabAttendanceSystemDatabase : RoomDatabase() {
+    abstract fun mainDao(): MainDao
+
     companion object {
         @Volatile
         private var INSTANCE: LabAttendanceSystemDatabase? = null

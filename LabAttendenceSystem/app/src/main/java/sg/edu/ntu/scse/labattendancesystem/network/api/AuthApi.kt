@@ -21,6 +21,6 @@ interface AuthApi {
     suspend fun getCurrentUser(@Header("Authorization") authHeader: String): UserResp
 
     @GET("labs/{id}")
-    suspend fun getLab(@Header("Authorization") authHeader: String, @Path("id") id: Long): LabResp
+    suspend fun getLab(@Header("Authorization") authHeader: String, @Path("id") id: Int): LabResp
 }
 

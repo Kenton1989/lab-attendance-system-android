@@ -48,7 +48,7 @@ class LocalDateTimeAdapter : JsonAdapter<LocalDateTime>() {
         }
     }
 
-    private val formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
+    private val formatter = DateTimeFormatter.ISO_DATE_TIME
     private fun fromNonNullString(nextString: String): LocalDateTime =
         LocalDateTime.parse(nextString, formatter)
 }
@@ -67,7 +67,7 @@ class LocalDateAdapter : JsonAdapter<LocalDate>() {
         }
     }
 
-    private val formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
+    private val formatter = DateTimeFormatter.ISO_DATE_TIME
     private fun fromNonNullString(nextString: String) =
         LocalDate.parse(nextString, formatter)
 }

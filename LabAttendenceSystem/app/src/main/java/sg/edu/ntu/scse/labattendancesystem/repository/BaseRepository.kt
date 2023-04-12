@@ -40,6 +40,7 @@ abstract class BaseRepository {
                 }
             } catch (e: Throwable) {
                 Log.e(TAG, "Wrapped unhandled exception $e")
+                e.printStackTrace()
                 emit(
                     Result.Failure(
                         e,
