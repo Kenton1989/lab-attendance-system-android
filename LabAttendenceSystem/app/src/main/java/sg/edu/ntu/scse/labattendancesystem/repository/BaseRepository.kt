@@ -15,7 +15,6 @@ abstract class BaseRepository {
         private const val REQUEST_TIMEOUT_MS = 10000L
     }
 
-
     /**
      * Helper function for tracing the loading status of suspended function
      */

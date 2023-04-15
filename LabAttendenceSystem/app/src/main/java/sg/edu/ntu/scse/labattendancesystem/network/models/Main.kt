@@ -4,7 +4,14 @@ import androidx.room.PrimaryKey
 import com.squareup.moshi.Json
 import java.time.LocalDateTime
 
-data class LabResp (
+data class PaginatedListResp<T>(
+    val count: Int,
+    val next: String?,
+    val previous: String?,
+    val results: List<T>,
+)
+
+data class LabResp(
     val id: Int?,
     val username: String?,
     @Json(name = "display_name") val displayName: String?,
@@ -25,11 +32,13 @@ data class GroupResp(
 data class GroupStudentResp(
     val id: Int?,
     val group: GroupResp?,
+    @Json(name = "group_id") val groupId: Int?,
     val student: UserResp?,
+    @Json(name = "student_id") val studentId: Int?,
     val seat: String?,
 )
 
-data class SessionResp (
+data class SessionResp(
     val id: Int?,
     val group: GroupResp?,
     @Json(name = "start_datetime") val startTime: LocalDateTime?,
@@ -39,15 +48,19 @@ data class SessionResp (
 data class MakeUpSessionResp(
     val id: Int?,
     val user: UserResp?,
-    val originalSession: SessionResp?,
-    val makeUpSession: SessionResp?,
+    @Json(name = "original_session") val originalSession: SessionResp?,
+    @Json(name = "original_session_id") val originalSessionId: Int?,
+    @Json(name = "make_up_session") val makeUpSession: SessionResp?,
+    @Json(name = "make_up_session_id") val makeUpSessionId: Int?,
 )
 
 data class AttendanceResp(
     val id: Int?,
     val session: SessionResp?,
+    @Json(name = "session_id") val sessionId: Int?,
     val attender: UserResp?,
-    @Json(name = "check_in_state")val checkInState: String?,
+    @Json(name = "attender_id") val attenderId: Int?,
+    @Json(name = "check_in_state") val checkInState: String?,
     @Json(name = "check_in_datetime") val checkInDatetime: LocalDateTime?,
     @Json(name = "last_modify") val lastModify: LocalDateTime?,
 )
@@ -55,7 +68,7 @@ data class AttendanceResp(
 data class NewAttendanceReq(
     @Json(name = "session_id") val sessionId: Int,
     @Json(name = "attender_id") val attenderId: Int,
-    @Json(name = "check_in_state")val checkInState: String?,
+    @Json(name = "check_in_state") val checkInState: String?,
     @Json(name = "check_in_datetime") val checkInDatetime: LocalDateTime?,
     @Json(name = "last_modify") val lastModify: LocalDateTime?,
 )

@@ -1,5 +1,6 @@
 package sg.edu.ntu.scse.labattendancesystem.repository
 
+import android.util.Log
 import androidx.work.WorkManager
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
@@ -14,40 +15,49 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneOffset
 
-class MainRepository(app: LabAttendanceSystemApplication) : BaseRepository() {
-
-    private val workManager = WorkManager.getInstance(app)
-    private val sessionManager =
-        SessionManager(TokenManager(app.loginPreferenceDataStore), ApiServices.token)
-
-    private val _activeSessions = MutableStateFlow<Result<List<Session>>>(Result.Loading)
-
-    private suspend fun updateActiveSessions() {
-        _activeSessions.value = Result.Success(getActiveSessionsImpl())
+class MainRepository(
+    private val app: LabAttendanceSystemApplication,
+    private val externalScope: CoroutineScope,
+    private val defaultDispatcher: CoroutineDispatcher = Dispatchers.IO,
+) : BaseRepository() {
+    companion object {
+        val TAG: String = MainRepository::class.java.simpleName
     }
 
-    fun getActiveSessions(): Flow<Result<List<Session>>> {
-        return _activeSessions
+    private val workManager = WorkManager.getInstance(app)
+    private val tokenManager = TokenManager(app.loginPreferenceDataStore)
+    private val sessionManager =
+        SessionManager(tokenManager, ApiServices.token)
+    private val apiServices = ApiServices(tokenManager)
+    private val initJob: Deferred<Any>
+    private lateinit var labCache: Lab
+
+    init {
+        Log.d(TAG, "init started")
+        initJob = externalScope.async(defaultDispatcher) { asyncInit() }
+    }
+
+    suspend fun awaitForInitDone() {
+        withContext(defaultDispatcher) {
+            initJob.await()
+        }
+    }
+
+    private suspend fun asyncInit() {
+        tokenManager.setUpTokenCache(externalScope, defaultDispatcher)
+        Log.d(TAG, "token cache init done")
+        initLabCache()
+        Log.d(TAG, "lab cache init done")
+        Log.d(TAG, "main repo init done")
+    }
+
+    private suspend fun initLabCache() {
+        labCache = sessionManager.getCurrentLab().toDomainModel()
     }
 
     fun getAllSessions(): Flow<Result<List<Session>>> {
         return load {
             getAllSessionsImpl()
-        }
-    }
-
-    private lateinit var labCache: Deferred<Lab>
-
-    private suspend fun getLab(): Lab {
-        if (!this::labCache.isInitialized) initLabCache()
-        return labCache.await()
-    }
-
-    private suspend fun initLabCache() {
-        return coroutineScope() {
-            labCache = async {
-                sessionManager.getCurrentLab().toDomainModel()
-            }
         }
     }
 
@@ -60,7 +70,7 @@ class MainRepository(app: LabAttendanceSystemApplication) : BaseRepository() {
 
     private suspend fun getAllSessionsImpl(): List<Session> {
         // TODO: change dummy data to actual data
-        val labId = getLab().id
+        val labId = labCache.id
         val res = mutableListOf<Session>()
         val now = LocalDateTime.now()
         val today = now.toLocalDate()

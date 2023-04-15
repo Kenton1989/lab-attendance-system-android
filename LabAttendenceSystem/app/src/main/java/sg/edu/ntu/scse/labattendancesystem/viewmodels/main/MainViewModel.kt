@@ -1,13 +1,19 @@
 package sg.edu.ntu.scse.labattendancesystem.viewmodels.main
 
+import android.util.Log
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.viewModelScope
 import sg.edu.ntu.scse.labattendancesystem.domain.models.Session
 import sg.edu.ntu.scse.labattendancesystem.LabAttendanceSystemApplication
 import sg.edu.ntu.scse.labattendancesystem.repository.MainRepository
 import sg.edu.ntu.scse.labattendancesystem.viewmodels.BaseViewModel
 
 class MainViewModel(app: LabAttendanceSystemApplication) : BaseViewModel() {
-    private val repo = MainRepository(app)
+    companion object {
+        val TAG: String = MainViewModel::class.java.simpleName
+    }
+
+    private val repo = MainRepository(app, viewModelScope)
 
     private var _selectedSession = MutableLiveData<Session?>()
     val selectedSession get() = _selectedSession

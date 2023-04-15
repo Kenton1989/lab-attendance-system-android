@@ -3,6 +3,7 @@ package sg.edu.ntu.scse.labattendancesystem.database.models
 import androidx.room.Embedded
 import androidx.room.Junction
 import androidx.room.Relation
+import java.time.LocalDateTime
 
 
 data class GroupWithCourse(
@@ -59,7 +60,21 @@ data class GroupWithDetails(
     val teachers: List<DbUser>
 )
 
-data class SessionWithGroupDetails(
+data class MakeUpSessionWithOriginalSessionAndStudent(
+    @Embedded val data: DbMakeUpSession,
+    @Relation(
+        parentColumn = "userId",
+        entityColumn = "id",
+    )
+    val user: DbUser,
+    @Relation(
+        parentColumn = "originalSessionId",
+        entityColumn = "id",
+    )
+    val originalSessionId: DbSession,
+)
+
+data class SessionWithGroupDetailsAndMakeUps(
     @Embedded val data: DbSession,
     @Relation(
         entity = DbGroup::class,
@@ -67,4 +82,28 @@ data class SessionWithGroupDetails(
         entityColumn = "id",
     )
     val group: GroupWithDetails,
+    @Relation(
+        entity = DbMakeUpSession::class,
+        parentColumn = "id",
+        entityColumn = "makeUpSessionId",
+    )
+    val makeUpFor: MakeUpSessionWithOriginalSessionAndStudent
+)
+
+data class StudentAttendanceWithAttender(
+    @Embedded val data: DbStudentAttendance,
+    @Relation(
+        parentColumn = "attenderId",
+        entityColumn = "id",
+    )
+    val attender: DbUser,
+)
+
+data class TeacherAttendanceWithAttender(
+    @Embedded val data: DbStudentAttendance,
+    @Relation(
+        parentColumn = "attenderId",
+        entityColumn = "id",
+    )
+    val attender: DbUser,
 )

@@ -1,22 +1,44 @@
 package sg.edu.ntu.scse.labattendancesystem.network
 
 import com.squareup.moshi.Moshi
-import com.squareup.moshi.adapters.Rfc3339DateJsonAdapter
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import sg.edu.ntu.scse.labattendancesystem.network.api.AuthApi
 import java.time.LocalDateTime
-import java.util.Date
 import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.JsonReader
 import com.squareup.moshi.JsonWriter
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collect
+import okhttp3.Dispatcher
+import okhttp3.OkHttpClient
+import sg.edu.ntu.scse.labattendancesystem.network.api.MainApi
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-class ApiServices() {
+class ApiServices(
+    private val tokenManager: TokenManager,
+) {
+    val main: MainApi by lazy { buildRetrofitWithAuthentication().create(MainApi::class.java) }
+
+    private fun buildRetrofitWithAuthentication(): Retrofit {
+        val client = OkHttpClient.Builder()
+            .addInterceptor(AuthInterceptor(
+                getToken = { tokenManager.cachedToken }
+            ))
+            .build()
+        return Retrofit.Builder()
+            .client(client)
+            .addConverterFactory(MoshiConverterFactory.create(moshi))
+            .baseUrl(baseUrl).build()
+    }
+
+
     companion object {
-        val token: AuthApi by lazy { buildRetrofit().create(AuthApi::class.java) }
+        val token: AuthApi by lazy { buildRetrofitWithoutAuthentication().create(AuthApi::class.java) }
 
         private const val baseUrl = "http://172.21.148.198/api/v1/"
 
@@ -26,7 +48,7 @@ class ApiServices() {
             .add(LocalDate::class.java, LocalDateAdapter().nullSafe())
             .build()
 
-        private fun buildRetrofit() =
+        private fun buildRetrofitWithoutAuthentication() =
             Retrofit.Builder()
                 .addConverterFactory(MoshiConverterFactory.create(moshi))
                 .baseUrl(baseUrl).build()
