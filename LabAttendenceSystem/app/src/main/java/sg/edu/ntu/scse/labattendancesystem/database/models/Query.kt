@@ -3,7 +3,7 @@ package sg.edu.ntu.scse.labattendancesystem.database.models
 import androidx.room.Embedded
 import androidx.room.Junction
 import androidx.room.Relation
-import java.time.LocalDateTime
+import java.time.OffsetDateTime
 
 
 data class GroupWithCourse(

@@ -2,19 +2,19 @@ package sg.edu.ntu.scse.labattendancesystem.database
 
 import androidx.room.TypeConverter
 import java.time.LocalDate
-import java.time.LocalDateTime
+import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
 class Converters {
     private val dateTimeFormatter = DateTimeFormatter.ISO_DATE_TIME
 
     @TypeConverter
-    fun datetimeFromIsoTimeString(value: String?): LocalDateTime? {
-        return value?.let { LocalDateTime.parse(it, dateTimeFormatter) }
+    fun datetimeFromIsoTimeString(value: String?): OffsetDateTime? {
+        return value?.let { OffsetDateTime.parse(it, dateTimeFormatter) }
     }
 
     @TypeConverter
-    fun datetimeToIsoTimeString(date: LocalDateTime?): String? {
+    fun datetimeToIsoTimeString(date: OffsetDateTime?): String? {
         return date?.format(dateTimeFormatter)
     }
 

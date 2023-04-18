@@ -16,7 +16,6 @@ import sg.edu.ntu.scse.labattendancesystem.viewmodels.login.LoginViewModel
 import sg.edu.ntu.scse.labattendancesystem.viewmodels.main.MainViewModel
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var viewModel: MainViewModel
     private var _binding: ActivityMainBinding? = null
     private val binding: ActivityMainBinding get() = _binding!!
 
@@ -26,10 +25,6 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         _binding = DataBindingUtil.setContentView(this, R.layout.activity_main)
-
-        viewModel =
-            ViewModelProvider(this, ViewModelFactory(application))[MainViewModel::class.java]
-
 
         setContentView(binding.root)
 

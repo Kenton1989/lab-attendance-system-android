@@ -5,6 +5,8 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.databinding.DataBindingUtil
+import sg.edu.ntu.scse.labattendancesystem.R
 import sg.edu.ntu.scse.labattendancesystem.databinding.FragmentSessionDetailBinding
 
 class SessionDetailFragment : Fragment() {
@@ -13,15 +15,15 @@ class SessionDetailFragment : Fragment() {
     // onDestroyView.
     private val binding get() = _binding!!
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-    }
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentSessionDetailBinding.inflate(inflater, container, false)
+        _binding = DataBindingUtil.inflate(
+            inflater,
+            R.layout.fragment_session_detail,
+            container,
+            false)
         return binding.root
     }
 

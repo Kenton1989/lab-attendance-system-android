@@ -1,6 +1,6 @@
 package sg.edu.ntu.scse.labattendancesystem.domain.models
 
-import java.time.LocalDateTime
+import java.time.OffsetDateTime
 
 data class Course(val id: Int, val code: String, val title: String)
 
@@ -25,8 +25,8 @@ data class Group(
 data class Session(
     val id: Int,
     val group: Group,
-    val startTime: LocalDateTime,
-    val endTime: LocalDateTime
+    val startTime: OffsetDateTime,
+    val endTime: OffsetDateTime
 )
 
 data class Attendance(
@@ -34,14 +34,14 @@ data class Attendance(
     val session: Session,
     val attender: User,
     val checkInState: String,
-    val checkInDatetime: LocalDateTime,
-    val lastModify: LocalDateTime,
+    val checkInDatetime: OffsetDateTime,
+    val lastModify: OffsetDateTime,
 )
 
 data class NewAttendance(
     val sessionId: Int,
     val attenderId: Int,
     val checkInState: String,
-    val checkInDatetime: LocalDateTime,
-    val lastModify: LocalDateTime,
+    val checkInDatetime: OffsetDateTime,
+    val lastModify: OffsetDateTime,
 )

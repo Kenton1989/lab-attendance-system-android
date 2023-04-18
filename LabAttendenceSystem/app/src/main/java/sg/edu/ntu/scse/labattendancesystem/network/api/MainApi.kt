@@ -1,6 +1,5 @@
 package sg.edu.ntu.scse.labattendancesystem.network.api
 
-import kotlinx.coroutines.flow.Flow
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -8,7 +7,7 @@ import sg.edu.ntu.scse.labattendancesystem.network.models.GroupResp
 import sg.edu.ntu.scse.labattendancesystem.network.models.GroupStudentResp
 import sg.edu.ntu.scse.labattendancesystem.network.models.PaginatedListResp
 import sg.edu.ntu.scse.labattendancesystem.network.models.SessionResp
-import java.time.LocalDateTime
+import java.time.OffsetDateTime
 
 interface MainApi {
     @GET("sessions?fields=id,group,start_datetime,end_datetime")
@@ -16,8 +15,10 @@ interface MainApi {
         @Query("group") groupId: Int? = null,
         @Query("course") courseId: Int? = null,
         @Query("lab") labId: Int? = null,
-        @Query("start_datetime_after") minStartDateTime: LocalDateTime? = null,
-        @Query("start_datetime_before") maxStartDateTime: LocalDateTime? = null,
+        @Query("start_datetime_after") startDateTimeAfter: OffsetDateTime? = null,
+        @Query("start_datetime_before") startDateTimeBefore: OffsetDateTime? = null,
+        @Query("end_datetime_after") endDateTimeAfter: OffsetDateTime? = null,
+        @Query("end_datetime_before") endDateTimeBefore: OffsetDateTime? = null,
         @Query("limit") pageLimit: Int = 200,
         @Query("offset") pageOffset: Int = 0,
         @Query("is_active") isActive: Boolean? = true,

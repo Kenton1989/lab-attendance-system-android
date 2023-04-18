@@ -8,6 +8,6 @@
     <fragment
         android:id="@+id/session_main_fragment"
         android:name="sg.edu.ntu.scse.labattendancesystem.ui.main.SessionMainFragment"
-        android:label="ItemListFragment">
+        android:label="Lab Attendance System Main Page">
     </fragment>
 </navigation>

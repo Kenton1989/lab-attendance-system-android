@@ -1,7 +1,7 @@
 package sg.edu.ntu.scse.labattendancesystem.database.models
 
 import androidx.room.*
-import java.time.LocalDateTime
+import java.time.OffsetDateTime
 
 
 @Entity(
@@ -137,8 +137,8 @@ data class DbSession(
     @PrimaryKey(autoGenerate = false) val id: Int,
 
     val groupId: Int,
-    val startTime: LocalDateTime,
-    val endTime: LocalDateTime,
+    val startTime: OffsetDateTime,
+    val endTime: OffsetDateTime,
     val isCompulsory: Boolean,
     val allowLateCheckIn: Boolean,
     val checkInDeadlineMinutes: Int,
@@ -208,8 +208,8 @@ data class DbStudentAttendance(
     val sessionId: Int,
     val attenderId: Int,
     val checkInState: String,
-    val checkInDatetime: LocalDateTime,
-    val lastModify: LocalDateTime,
+    val checkInDatetime: OffsetDateTime,
+    val lastModify: OffsetDateTime,
 )
 
 
@@ -240,6 +240,6 @@ data class DbTeacherAttendance(
     val sessionId: Int,
     val attenderId: Int,
     val checkInState: String,
-    val checkInDatetime: LocalDateTime,
-    val lastModify: LocalDateTime,
+    val checkInDatetime: OffsetDateTime,
+    val lastModify: OffsetDateTime,
 )

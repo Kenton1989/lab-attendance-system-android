@@ -1,5 +1,5 @@
 package sg.edu.ntu.scse.labattendancesystem.network.models
 
-import java.time.LocalDateTime
+import java.time.OffsetDateTime
 
-data class CreateTokenResp(val token: String, val expiry: LocalDateTime)
+data class CreateTokenResp(val token: String, val expiry: OffsetDateTime)

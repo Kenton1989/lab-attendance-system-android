@@ -1,27 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.slidingpanelayout.widget.SlidingPaneLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/sliding_pane_layout"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".ui.main.MainActivity">
+    xmlns:tools="http://schemas.android.com/tools">
 
-    <androidx.fragment.app.FragmentContainerView
-        android:id="@+id/session_list_container"
-        android:name="sg.edu.ntu.scse.labattendancesystem.ui.main.SessionListFragment"
-        android:layout_width="400dp"
-        android:layout_height="match_parent" />
+    <data>
 
-    <!-- The second child becomes the right (content) pane. In this
-         example, android:layout_weight is used to expand this detail pane
-         to consume leftover available space when the
-         the entire window is wide enough to fit both the left and right pane.-->
-    <androidx.fragment.app.FragmentContainerView
-        android:id="@+id/session_detail_container"
-        android:name="sg.edu.ntu.scse.labattendancesystem.ui.main.SessionDetailFragment"
-        android:layout_width="300dp"
-        android:layout_height="match_parent"
-        android:layout_weight="1" />
+    </data>
 
-</androidx.slidingpanelayout.widget.SlidingPaneLayout>
+    <androidx.slidingpanelayout.widget.SlidingPaneLayout
+        android:id="@+id/sliding_pane_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <androidx.fragment.app.FragmentContainerView
+            android:id="@+id/session_list_container"
+            android:name="sg.edu.ntu.scse.labattendancesystem.ui.main.SessionListFragment"
+            android:layout_width="400dp"
+            android:layout_height="match_parent" />
+
+        <!-- The second child becomes the right (content) pane. In this
+             example, android:layout_weight is used to expand this detail pane
+             to consume leftover available space when the
+             the entire window is wide enough to fit both the left and right pane.-->
+        <androidx.fragment.app.FragmentContainerView
+            android:id="@+id/session_detail_container"
+            android:name="sg.edu.ntu.scse.labattendancesystem.ui.main.SessionDetailFragment"
+            android:layout_width="300dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1" />
+
+    </androidx.slidingpanelayout.widget.SlidingPaneLayout>
+</layout>

@@ -5,7 +5,7 @@ import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import sg.edu.ntu.scse.labattendancesystem.network.api.AuthApi
-import java.time.LocalDateTime
+import java.time.OffsetDateTime
 import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.JsonReader
 import com.squareup.moshi.JsonWriter
@@ -44,7 +44,7 @@ class ApiServices(
 
         private val moshi = Moshi.Builder()
             .add(KotlinJsonAdapterFactory())
-            .add(LocalDateTime::class.java, LocalDateTimeAdapter().nullSafe())
+            .add(OffsetDateTime::class.java, OffsetDateTimeAdapter().nullSafe())
             .add(LocalDate::class.java, LocalDateAdapter().nullSafe())
             .build()
 
@@ -56,12 +56,12 @@ class ApiServices(
 
 }
 
-class LocalDateTimeAdapter : JsonAdapter<LocalDateTime>() {
-    override fun toJson(writer: JsonWriter, value: LocalDateTime?) {
+class OffsetDateTimeAdapter : JsonAdapter<OffsetDateTime>() {
+    override fun toJson(writer: JsonWriter, value: OffsetDateTime?) {
         value?.let { writer.value(it.format(formatter)) }
     }
 
-    override fun fromJson(reader: JsonReader): LocalDateTime? {
+    override fun fromJson(reader: JsonReader): OffsetDateTime? {
         return if (reader.peek() != JsonReader.Token.NULL) {
             fromNonNullString(reader.nextString())
         } else {
@@ -71,8 +71,8 @@ class LocalDateTimeAdapter : JsonAdapter<LocalDateTime>() {
     }
 
     private val formatter = DateTimeFormatter.ISO_DATE_TIME
-    private fun fromNonNullString(nextString: String): LocalDateTime =
-        LocalDateTime.parse(nextString, formatter)
+    private fun fromNonNullString(nextString: String): OffsetDateTime =
+        OffsetDateTime.parse(nextString, formatter)
 }
 
 class LocalDateAdapter : JsonAdapter<LocalDate>() {

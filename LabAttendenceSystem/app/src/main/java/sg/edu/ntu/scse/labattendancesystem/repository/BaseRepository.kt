@@ -42,9 +42,7 @@ abstract class BaseRepository {
                 e.printStackTrace()
                 emit(
                     Result.Failure(
-                        e,
-                        e.message ?: e.toString(),
-                        HttpURLConnection.HTTP_INTERNAL_ERROR
+                        e, e.message ?: e.toString(), HttpURLConnection.HTTP_INTERNAL_ERROR
                     )
                 )
             }
@@ -63,7 +61,8 @@ abstract class BaseRepository {
             throw it
         }
     }.flowOn(Dispatchers.IO).onEach {
-        Log.d(TAG, "result: $it")
+        if (it is Result.Success) Log.d(TAG, "result: success")
+        else Log.d(TAG, "result: $it")
     }
 
 
