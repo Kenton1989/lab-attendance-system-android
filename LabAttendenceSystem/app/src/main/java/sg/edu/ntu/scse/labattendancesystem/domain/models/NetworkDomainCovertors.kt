@@ -43,7 +43,8 @@ fun AttendanceResp.toDomainModel() = Attendance(
     id = id!!,
     session = session!!.toDomainModel(),
     attender = attender!!.toDomainModel(),
-    checkInState = checkInState!!,
+    seat = null,
+    checkInState = AttendanceState.fromValue(checkInState!!),
     checkInDatetime = checkInDatetime!!,
     lastModify = lastModify!!,
 )

@@ -3,12 +3,12 @@ package sg.edu.ntu.scse.labattendancesystem.viewmodels.main
 import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import sg.edu.ntu.scse.labattendancesystem.domain.models.Session
 import sg.edu.ntu.scse.labattendancesystem.LabAttendanceSystemApplication
+import sg.edu.ntu.scse.labattendancesystem.domain.models.Attendance
 import sg.edu.ntu.scse.labattendancesystem.repository.MainRepository
-import sg.edu.ntu.scse.labattendancesystem.repository.Result
+import sg.edu.ntu.scse.labattendancesystem.domain.models.Result
 import sg.edu.ntu.scse.labattendancesystem.viewmodels.BaseViewModel
 
 class MainViewModel(app: LabAttendanceSystemApplication) : BaseViewModel() {
@@ -21,6 +21,9 @@ class MainViewModel(app: LabAttendanceSystemApplication) : BaseViewModel() {
 
     private var _selectedSession = MutableLiveData<Session?>()
     val selectedSession get() = _selectedSession
+
+    private var _selectedStudentAttendances = MutableLiveData<List<Attendance>?>()
+    val selectedStudentAttendances get() = _selectedStudentAttendances
 
     private var _activeSessionList = MutableLiveData<List<Session>>()
     val activeSessionList get() = _activeSessionList
@@ -42,15 +45,25 @@ class MainViewModel(app: LabAttendanceSystemApplication) : BaseViewModel() {
     }
 
     private fun updateActiveSessions(newVal: List<Session>) {
-        _activeSessionList.value = newVal
+        val sortedSessions = newVal.sortedBy { it.startTime }
+        _activeSessionList.value = sortedSessions
 
-        // clear selected session when the section is not active
+        // reset selected session when the section is not active
         if (newVal.all { it.id != _selectedSession.value?.id }) {
-            _selectedSession.value = null
+            val newSelectedSession =
+                if (sortedSessions.isNotEmpty()) sortedSessions.first() else null
+            updateSelectedSession(newSelectedSession)
         }
     }
 
-    fun updateCurrentSession(session: Session) {
+    fun updateSelectedSession(session: Session?) {
         _selectedSession.value = session
+        _selectedStudentAttendances.value = null
+        if (session != null) {
+            val studAtt = repo.getStudentAttendances(session)
+            viewModelScope.launch {
+
+            }
+        }
     }
 }

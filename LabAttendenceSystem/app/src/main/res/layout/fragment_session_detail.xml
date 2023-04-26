@@ -7,13 +7,69 @@
 
     </data>
 
-    <androidx.coordinatorlayout.widget.CoordinatorLayout
-        android:id="@+id/item_detail_container"
+    <ScrollView
+        android:id="@+id/main_scroll_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:context="ui.main.SessionDetailFragment"
-        tools:ignore="MergeRootFrame">
+        android:visibility="gone">
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/item_detail_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="32dp"
+            android:orientation="vertical"
+            tools:context="ui.main.SessionDetailFragment"
+            tools:ignore="MergeRootFrame">
 
 
-    </androidx.coordinatorlayout.widget.CoordinatorLayout>
+            <TextView
+                android:id="@+id/title"
+                style="@style/SessionDetailTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="@string/no_session_detail_title"
+                tools:text="CZX - CZXXXX: Computer Science" />
+
+            <TextView
+                android:id="@+id/student_table_title"
+                style="@style/CheckInTableTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginVertical="16dp"
+                android:text="@string/students" />
+
+            <include layout="@layout/header_check_in_table" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/student_check_in_table_content"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="true"
+                android:minHeight="100dp"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+
+            <TextView
+                android:id="@+id/teacher_table_title"
+                style="@style/CheckInTableTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginVertical="16dp"
+                android:text="@string/teaching_assistants" />
+
+            <include layout="@layout/header_check_in_table" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/teacher_check_in_table_content"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="true"
+                android:minHeight="100dp"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+    </ScrollView>
+
 </layout>

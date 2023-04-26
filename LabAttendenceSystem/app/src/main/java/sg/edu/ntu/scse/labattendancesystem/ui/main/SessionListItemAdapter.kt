@@ -3,30 +3,34 @@ package sg.edu.ntu.scse.labattendancesystem.ui.main
 import android.annotation.SuppressLint
 import android.content.Context
 import android.view.LayoutInflater
-import android.view.View.OnClickListener
+import android.view.View
 import android.view.ViewGroup
 import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.RecyclerView
 import sg.edu.ntu.scse.labattendancesystem.R
 import sg.edu.ntu.scse.labattendancesystem.databinding.ItemSessionListBinding
 import sg.edu.ntu.scse.labattendancesystem.domain.models.Session
+import sg.edu.ntu.scse.labattendancesystem.viewmodels.main.MainViewModel
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
 class SessionListItemAdapter(
     private val context: Context,
-    private val onSessionSelected: (s: Session) -> Any = { }
+    private val viewModel: MainViewModel,
+    private val onSessionSelected: (s: Session) -> Unit = { }
 ) : RecyclerView.Adapter<SessionListItemAdapter.ItemViewHolder>() {
-
-    var sessions: List<Session> = listOf()
-        @SuppressLint("NotifyDataSetChanged")
-        set(value) {
-            field = value
-            notifyDataSetChanged()
-        }
 
     class ItemViewHolder(val binding: ItemSessionListBinding) :
         RecyclerView.ViewHolder(binding.root) {}
+
+    var sessions: List<Session> = listOf()
+        @SuppressLint("NotifyDataSetChanged") set(value) {
+            field = value
+            resetClickedItem()
+            notifyDataSetChanged()
+        }
+
+    private var lastSelectedHolder: ItemViewHolder? = null
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ItemViewHolder {
         val binding: ItemSessionListBinding = DataBindingUtil.inflate(
@@ -39,31 +43,57 @@ class SessionListItemAdapter(
     }
 
     override fun onBindViewHolder(holder: ItemViewHolder, position: Int) {
-        val item = sessions[position]
+        val session = sessions[position]
+        if (position == 0 && lastSelectedHolder == null) {
+            updateSelectedSession(holder, session)
+        }
         holder.binding.apply {
             sessionTitle.text = context.resources.getString(
                 R.string.course_group,
-                item.group.course.code,
-                item.group.name,
+                session.group.course.code,
+                session.group.name,
             )
             sessionTime.text = context.resources.getString(
                 R.string.time_range,
-                timeStr(item.startTime),
-                timeStr(item.endTime),
+                timeStr(session.startTime),
+                timeStr(session.endTime),
             )
-            clickableOverlay.setOnClickListener {
-                onSessionSelected(item)
+
+            if (session.id == viewModel.selectedSession.value?.id) {
+                colorfulBorder.visibility = View.VISIBLE
+                lastSelectedHolder = holder
+            } else {
+                colorfulBorder.visibility = View.GONE
+            }
+//            sessionCard.isChecked = item.id == viewModel.selectedSession.value?.id
+
+            sessionCard.setOnClickListener {
+                onItemClicked(holder, session)
             }
         }
-
     }
 
     override fun getItemCount(): Int {
         return sessions.size
     }
 
-    private fun timeStr(t: OffsetDateTime) =
-        t.format(TIME_FORMAT)
+    private fun onItemClicked(holder: ItemViewHolder, session: Session) {
+        notifyItemChanged(holder.layoutPosition)
+        lastSelectedHolder?.let { notifyItemChanged(it.layoutPosition) }
+        updateSelectedSession(holder, session)
+    }
+
+    private fun updateSelectedSession(holder: ItemViewHolder, session: Session) {
+        viewModel.updateSelectedSession(session)
+        onSessionSelected(session)
+        lastSelectedHolder = holder
+    }
+
+    private fun resetClickedItem() {
+        lastSelectedHolder = null
+    }
+
+    private fun timeStr(t: OffsetDateTime) = t.format(TIME_FORMAT)
 
     companion object {
         private val TIME_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("hh:mm")

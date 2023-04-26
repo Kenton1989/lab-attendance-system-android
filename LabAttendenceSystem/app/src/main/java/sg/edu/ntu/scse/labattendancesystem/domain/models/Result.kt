@@ -1,4 +1,4 @@
-package sg.edu.ntu.scse.labattendancesystem.repository
+package sg.edu.ntu.scse.labattendancesystem.domain.models
 
 /**
  * A generic class that holds a value with its loading status.

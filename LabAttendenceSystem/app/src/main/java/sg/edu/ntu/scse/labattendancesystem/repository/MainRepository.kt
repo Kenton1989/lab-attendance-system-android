@@ -67,6 +67,20 @@ class MainRepository(
         }
     }
 
+    fun getStudentAttendances(session: Session): Flow<Result<List<Attendance>>> {
+        return safeLoad {
+            val resp = apiServices.main.getStudentAttendances(pageLimit = 50)
+            resp.results.map { it.toDomainModel() }
+        }
+    }
+
+    fun getTeacherAttendances(session: Session): Flow<Result<List<Attendance>>> {
+        return safeLoad {
+            val resp = apiServices.main.getStudentAttendances(pageLimit = 3)
+            resp.results.map { it.toDomainModel() }
+        }
+    }
+
     private suspend fun getActiveSessionsImpl(): List<Session> {
         val labId = labCache.id
         val now = OffsetDateTime.now()

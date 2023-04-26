@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.map
 import sg.edu.ntu.scse.labattendancesystem.LabAttendanceSystemApplication
 
 import sg.edu.ntu.scse.labattendancesystem.R
+import sg.edu.ntu.scse.labattendancesystem.domain.models.Result
 import sg.edu.ntu.scse.labattendancesystem.network.UnauthenticatedError
 import sg.edu.ntu.scse.labattendancesystem.repository.*
 import sg.edu.ntu.scse.labattendancesystem.viewmodels.BaseViewModel

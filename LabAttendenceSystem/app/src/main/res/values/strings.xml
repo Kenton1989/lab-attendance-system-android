@@ -17,9 +17,18 @@
     <string name="invalid_lab_room_number_error">Invalid lab room number</string>
     <string name="unknown_login_error">Unknown error occurred during login. Please check your network and retry.</string>
     <string name="prompt_room_no">Room No.</string>
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
-    <string name="title_placeholder">Title</string>
     <string name="course_group">%1$s - %2$s</string>
     <string name="time_range">%1$s~%2$s</string>
+    <string name="session_detail_title">[%1$s] %2$s: %3$s</string>
+    <string name="no_session_detail_title">No Session Selected</string>
+    <string name="students">Students</string>
+    <string name="teaching_assistants">TAs</string>
+    <string name="username">Username</string>
+    <string name="number_acronym">No.</string>
+    <string name="name">Name</string>
+    <string name="seat">Seat</string>
+    <string name="ok">OK</string>
+    <string name="empty_cell">-</string>
+    <string name="attended_mark">✅</string>
+    <string name="absent_mark">❌</string>
 </resources>

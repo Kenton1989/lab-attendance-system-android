@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.withTimeout
 import retrofit2.HttpException
 import retrofit2.Response
+import sg.edu.ntu.scse.labattendancesystem.domain.models.Result
 import java.net.HttpURLConnection
 
 abstract class BaseRepository {

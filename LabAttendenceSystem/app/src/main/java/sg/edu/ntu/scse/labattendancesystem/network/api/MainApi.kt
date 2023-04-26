@@ -3,10 +3,7 @@ package sg.edu.ntu.scse.labattendancesystem.network.api
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
-import sg.edu.ntu.scse.labattendancesystem.network.models.GroupResp
-import sg.edu.ntu.scse.labattendancesystem.network.models.GroupStudentResp
-import sg.edu.ntu.scse.labattendancesystem.network.models.PaginatedListResp
-import sg.edu.ntu.scse.labattendancesystem.network.models.SessionResp
+import sg.edu.ntu.scse.labattendancesystem.network.models.*
 import java.time.OffsetDateTime
 
 interface MainApi {
@@ -23,6 +20,30 @@ interface MainApi {
         @Query("offset") pageOffset: Int = 0,
         @Query("is_active") isActive: Boolean? = true,
     ): PaginatedListResp<SessionResp>
+
+    @GET("student_attendances?fields=id,session,attender,check_in_state,check_in_datetime,last_modify")
+    suspend fun getStudentAttendances(
+        @Query("course") courseId: Int? = null,
+        @Query("group") groupId: Int? = null,
+        @Query("session") sessionId: Int? = null,
+        @Query("lab") labId: Int? = null,
+        @Query("check_in_state") checkInState: String? = null,
+        @Query("limit") pageLimit: Int = 200,
+        @Query("offset") pageOffset: Int = 0,
+        @Query("is_active") isActive: Boolean? = true,
+    ): PaginatedListResp<AttendanceResp>
+
+    @GET("teacher_attendances?fields=id,session,attender,check_in_state,check_in_datetime,last_modify")
+    suspend fun getTeacherAttendances(
+        @Query("course") courseId: Int? = null,
+        @Query("group") groupId: Int? = null,
+        @Query("session") sessionId: Int? = null,
+        @Query("lab") labId: Int? = null,
+        @Query("check_in_state") checkInState: String? = null,
+        @Query("limit") pageLimit: Int = 200,
+        @Query("offset") pageOffset: Int = 0,
+        @Query("is_active") isActive: Boolean? = true,
+    ): PaginatedListResp<AttendanceResp>
 
     @GET("groups/{id}?fields=id,name,course,lab,room_no,teachers")
     suspend fun getGroup(@Path("id") id: Int): GroupResp

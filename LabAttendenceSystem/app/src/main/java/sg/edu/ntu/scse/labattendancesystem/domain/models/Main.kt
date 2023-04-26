@@ -23,17 +23,32 @@ data class Group(
 )
 
 data class Session(
-    val id: Int,
-    val group: Group,
-    val startTime: OffsetDateTime,
-    val endTime: OffsetDateTime
+    val id: Int, val group: Group, val startTime: OffsetDateTime, val endTime: OffsetDateTime
 )
+
+enum class AttendanceState(val value: String) {
+    ABSENT("absent"), ATTEND("attend"), LATE("late");
+
+    override fun toString() = value
+
+    fun isAbsent() = this == ABSENT
+
+    companion object {
+        fun fromValue(value: String) = when (value) {
+            ABSENT.value -> ABSENT;
+            ATTEND.value -> ATTEND;
+            LATE.value -> LATE;
+            else -> throw IllegalArgumentException("unknown attendance state value")
+        }
+    }
+}
 
 data class Attendance(
     val id: Int,
     val session: Session,
     val attender: User,
-    val checkInState: String,
+    val seat: String?,
+    val checkInState: AttendanceState,
     val checkInDatetime: OffsetDateTime,
     val lastModify: OffsetDateTime,
 )

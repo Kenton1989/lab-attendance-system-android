@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <LinearLayout
+        style="@style/TableHeaderRow"
+        android:orientation="horizontal">
+        <TextView
+            style="@style/TableHeaderCellTextView"
+            android:layout_width="@dimen/number_col_width"
+            android:text="@string/number_acronym" />
+
+        <TextView
+            style="@style/TableHeaderCellTextView"
+            android:layout_width="@dimen/username_col_width"
+            android:text="@string/username" />
+
+        <TextView
+            style="@style/TableHeaderCellTextView"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:text="@string/name" />
+
+        <TextView
+            style="@style/TableHeaderCellTextView"
+            android:layout_width="@dimen/seat_col_width"
+            android:text="@string/seat" />
+
+        <TextView
+            style="@style/TableHeaderCellTextView"
+            android:layout_width="@dimen/checked_in_col_width"
+            android:text="@string/ok" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:background="@android:color/darker_gray"/>
+</LinearLayout>
