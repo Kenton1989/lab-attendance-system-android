@@ -11,7 +11,7 @@ import sg.edu.ntu.scse.labattendancesystem.R
 import sg.edu.ntu.scse.labattendancesystem.databinding.ItemSessionListBinding
 import sg.edu.ntu.scse.labattendancesystem.domain.models.Session
 import sg.edu.ntu.scse.labattendancesystem.viewmodels.main.MainViewModel
-import java.time.OffsetDateTime
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
 class SessionListItemAdapter(
@@ -93,7 +93,7 @@ class SessionListItemAdapter(
         lastSelectedHolder = null
     }
 
-    private fun timeStr(t: OffsetDateTime) = t.format(TIME_FORMAT)
+    private fun timeStr(t: ZonedDateTime) = t.format(TIME_FORMAT)
 
     companion object {
         private val TIME_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("hh:mm")

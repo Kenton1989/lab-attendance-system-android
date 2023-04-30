@@ -1,7 +1,7 @@
 package sg.edu.ntu.scse.labattendancesystem.database.models
 
 import androidx.room.*
-import java.time.OffsetDateTime
+import java.time.ZonedDateTime
 
 
 @Entity(
@@ -57,16 +57,15 @@ data class DbCourse(
             onDelete = ForeignKey.CASCADE,
         ),
     ],
-    indices = [Index("courseId", "name", unique = true), Index("room"), Index("labId")],
+    indices = [Index("courseId", "name", unique = true), Index("roomNo"), Index("labId", "roomNo")],
 )
 
 data class DbGroup(
     @PrimaryKey(autoGenerate = false) val id: Int,
     val courseId: Int,
     val labId: Int,
-    val room: Int?,
+    val roomNo: Int?,
     val name: String,
-    val title: String,
 )
 
 
@@ -137,8 +136,8 @@ data class DbSession(
     @PrimaryKey(autoGenerate = false) val id: Int,
 
     val groupId: Int,
-    val startTime: OffsetDateTime,
-    val endTime: OffsetDateTime,
+    val startTime: ZonedDateTime,
+    val endTime: ZonedDateTime,
     val isCompulsory: Boolean,
     val allowLateCheckIn: Boolean,
     val checkInDeadlineMinutes: Int,
@@ -203,13 +202,13 @@ data class DbMakeUpSession(
     ],
 )
 data class DbStudentAttendance(
-    @PrimaryKey val localId: Int,
+    @PrimaryKey(autoGenerate = true) val localId: Int = 0,
     val id: Int?,
     val sessionId: Int,
     val attenderId: Int,
     val checkInState: String,
-    val checkInDatetime: OffsetDateTime,
-    val lastModify: OffsetDateTime,
+    val checkInDatetime: ZonedDateTime,
+    val lastModify: ZonedDateTime,
 )
 
 
@@ -240,6 +239,6 @@ data class DbTeacherAttendance(
     val sessionId: Int,
     val attenderId: Int,
     val checkInState: String,
-    val checkInDatetime: OffsetDateTime,
-    val lastModify: OffsetDateTime,
+    val checkInDatetime: ZonedDateTime,
+    val lastModify: ZonedDateTime,
 )

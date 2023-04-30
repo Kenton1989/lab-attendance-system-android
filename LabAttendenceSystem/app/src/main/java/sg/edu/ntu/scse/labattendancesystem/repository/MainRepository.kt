@@ -4,12 +4,13 @@ import android.util.Log
 import androidx.work.WorkManager
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.transform
 import sg.edu.ntu.scse.labattendancesystem.LabAttendanceSystemApplication
 import sg.edu.ntu.scse.labattendancesystem.domain.models.*
 import sg.edu.ntu.scse.labattendancesystem.network.ApiServices
 import sg.edu.ntu.scse.labattendancesystem.network.SessionManager
 import sg.edu.ntu.scse.labattendancesystem.network.TokenManager
-import java.time.OffsetDateTime
+import java.time.ZonedDateTime
 
 class MainRepository(
     private val app: LabAttendanceSystemApplication,
@@ -21,15 +22,25 @@ class MainRepository(
     }
 
     private val workManager = WorkManager.getInstance(app)
-    private val tokenManager = TokenManager(app.loginPreferenceDataStore)
+    private val tokenManager = app.tokenManager
     private val sessionManager = SessionManager(tokenManager, ApiServices.token)
     private val apiServices = ApiServices(tokenManager)
+    private val mainDb = app.database.mainDao()
+    private val syncer = DataSyncer(
+        app.apiServices.main,
+        mainDb,
+        workManager,
+    )
     private val deferredInit: Deferred<Any>
     private lateinit var labCache: Lab
 
     init {
         Log.d(TAG, "init started")
         deferredInit = externalScope.async(defaultDispatcher) { asyncInit() }
+    }
+
+    fun cleanUp() {
+        syncer.stopSync()
     }
 
     suspend fun awaitForInitDone() {
@@ -43,6 +54,9 @@ class MainRepository(
         Log.d(TAG, "token cache init done")
         initLabCache()
         Log.d(TAG, "lab cache init done")
+        syncer.labId = labCache.id
+        syncer.startSync()
+        syncer.syncOnce()
         Log.d(TAG, "main repo init done")
     }
 
@@ -67,28 +81,28 @@ class MainRepository(
         }
     }
 
-    fun getStudentAttendances(session: Session): Flow<Result<List<Attendance>>> {
-        return safeLoad {
-            val resp = apiServices.main.getStudentAttendances(pageLimit = 50)
-            resp.results.map { it.toDomainModel() }
+    fun getStudentAttendances(session: Session): Flow<List<Attendance>> {
+        return mainDb.getStudentAttendancesOfSession(sessionId = session.id).transform {
+
         }
     }
 
-    fun getTeacherAttendances(session: Session): Flow<Result<List<Attendance>>> {
-        return safeLoad {
-            val resp = apiServices.main.getStudentAttendances(pageLimit = 3)
-            resp.results.map { it.toDomainModel() }
+    fun getTeacherAttendances(session: Session): Flow<List<Attendance>> {
+        return mainDb.getTeacherAttendancesOfSession(sessionId = session.id).transform {
+
         }
     }
 
     private suspend fun getActiveSessionsImpl(): List<Session> {
         val labId = labCache.id
-        val now = OffsetDateTime.now()
+        val now = ZonedDateTime.now()
+        // TODO: fix the instruction
         val resp = apiServices.main.getSessions(
             labId = labId,
 //            startDateTimeAfter = now,
             pageLimit = 10,
         )
+
         return resp.results.map { it.toDomainModel() }
     }
 

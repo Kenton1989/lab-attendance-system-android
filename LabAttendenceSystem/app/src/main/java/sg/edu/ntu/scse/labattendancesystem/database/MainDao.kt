@@ -7,10 +7,10 @@ import sg.edu.ntu.scse.labattendancesystem.database.models.*
 @Dao
 interface MainDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertUsers(vararg models: DbUser)
+    fun insertUsers(models: Collection<DbUser>)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertLabs(vararg models: DbLab)
+    fun insertLabs(models: Collection<DbLab>)
 
     @Query("SELECT *  FROM course_tb;")
     fun getAllCourses(): Flow<List<DbCourse>>
@@ -19,7 +19,7 @@ interface MainDao {
     fun getCourse(id: Int): Flow<DbCourse>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertCourses(vararg models: DbCourse)
+    fun insertCourses(models: Collection<DbCourse>)
 
     @Transaction
     @Query("SELECT * FROM group_tb;")
@@ -34,7 +34,7 @@ interface MainDao {
     fun getDetailGroup(id: Int): Flow<GroupWithDetails>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertGroups(vararg models: DbGroup)
+    fun insertGroups(models: Collection<DbGroup>)
 
     @RewriteQueriesToDropUnusedColumns
     @Query("SELECT * FROM user_tb JOIN group_teacher_tb ON id = teacherId WHERE groupId = :groupId")
@@ -42,21 +42,21 @@ interface MainDao {
 
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertGroupTeachers(vararg models: DbGroupTeacher)
+    fun insertGroupTeachers(models: Collection<DbGroupTeacher>)
 
-    fun insertGroupTeachers(groupId: Int, vararg teacherId: Int) =
-        insertGroupTeachers(*teacherId.map {
+    fun insertGroupTeachers(groupId: Int, teacherId: List<Int>) =
+        insertGroupTeachers(teacherId.map {
             DbGroupTeacher(
                 groupId = groupId, teacherId = it
             )
-        }.toTypedArray())
+        })
 
     @Transaction
     @Query("SELECT * FROM group_student_tb WHERE groupId = :groupId")
     fun getStudentsOfGroup(groupId: Int): Flow<List<GroupStudentWithUser>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertGroupStudents(vararg models: DbGroupStudent)
+    fun insertGroupStudents(models: Collection<DbGroupStudent>)
 
     @Transaction
     @Query("SELECT * FROM session_tb;")
@@ -71,14 +71,14 @@ interface MainDao {
     fun getDetailSessions(id: Int): Flow<List<SessionWithGroupDetailsAndMakeUps>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertSessions(vararg models: DbSession)
+    fun insertSessions(models: Collection<DbSession>)
 
     @Transaction
     @Query("SELECT * FROM make_up_session_tb WHERE makeUpSessionId = :makeUpSessionId;")
     fun getMakeUpSessions(makeUpSessionId: Int): Flow<List<MakeUpSessionWithOriginalSessionAndStudent>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertMakeUpSessions(vararg models: DbMakeUpSession)
+    fun insertMakeUpSessions(models: Collection<DbMakeUpSession>)
 
     @Transaction
     @Query("SELECT * FROM student_attendance_tb WHERE id = :id;")
@@ -89,7 +89,7 @@ interface MainDao {
     fun getStudentAttendancesOfSession(sessionId: Int): Flow<List<StudentAttendanceWithAttender>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun inseStudentAttendances(vararg models: DbStudentAttendance)
+    fun insertStudentAttendances(models: Collection<DbStudentAttendance>)
 
     @Transaction
     @Query("SELECT * FROM teacher_attendance_tb WHERE id = :id;")
@@ -100,5 +100,5 @@ interface MainDao {
     fun getTeacherAttendancesOfSession(sessionId: Int): Flow<List<TeacherAttendanceWithAttender>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun inseTeacherAttendances(vararg models: DbTeacherAttendance)
+    fun insertTeacherAttendances(models: Collection<DbTeacherAttendance>)
 }

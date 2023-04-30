@@ -66,4 +66,9 @@ class MainViewModel(app: LabAttendanceSystemApplication) : BaseViewModel() {
             }
         }
     }
+
+    override fun onCleared() {
+        super.onCleared()
+        repo.cleanUp()
+    }
 }

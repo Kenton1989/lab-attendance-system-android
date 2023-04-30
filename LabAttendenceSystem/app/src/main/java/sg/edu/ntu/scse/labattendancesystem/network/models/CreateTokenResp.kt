@@ -1,5 +1,5 @@
 package sg.edu.ntu.scse.labattendancesystem.network.models
 
-import java.time.OffsetDateTime
+import java.time.ZonedDateTime
 
-data class CreateTokenResp(val token: String, val expiry: OffsetDateTime)
+data class CreateTokenResp(val token: String, val expiry: ZonedDateTime)

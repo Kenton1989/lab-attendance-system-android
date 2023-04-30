@@ -1,28 +1,27 @@
 package sg.edu.ntu.scse.labattendancesystem.network
 
-import com.squareup.moshi.Moshi
-import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-import retrofit2.Retrofit
-import retrofit2.converter.moshi.MoshiConverterFactory
-import sg.edu.ntu.scse.labattendancesystem.network.api.AuthApi
-import java.time.OffsetDateTime
 import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.JsonReader
 import com.squareup.moshi.JsonWriter
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collect
-import okhttp3.Dispatcher
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
+import retrofit2.Converter
+import retrofit2.Retrofit
+import retrofit2.converter.moshi.MoshiConverterFactory
+import sg.edu.ntu.scse.labattendancesystem.network.api.AuthApi
 import sg.edu.ntu.scse.labattendancesystem.network.api.MainApi
+import java.lang.reflect.Type
 import java.time.LocalDate
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+
 
 class ApiServices(
     private val tokenManager: TokenManager,
 ) {
     val main: MainApi by lazy { buildRetrofitWithAuthentication().create(MainApi::class.java) }
+    val token: AuthApi get() = ApiServices.token
 
     private fun buildRetrofitWithAuthentication(): Retrofit {
         val client = OkHttpClient.Builder()
@@ -33,6 +32,7 @@ class ApiServices(
         return Retrofit.Builder()
             .client(client)
             .addConverterFactory(MoshiConverterFactory.create(moshi))
+            .addConverterFactory(RetrofitQueryConverterFactory.create())
             .baseUrl(baseUrl).build()
     }
 
@@ -44,7 +44,7 @@ class ApiServices(
 
         private val moshi = Moshi.Builder()
             .add(KotlinJsonAdapterFactory())
-            .add(OffsetDateTime::class.java, OffsetDateTimeAdapter().nullSafe())
+            .add(ZonedDateTime::class.java, ZonedDateTimeAdapter().nullSafe())
             .add(LocalDate::class.java, LocalDateAdapter().nullSafe())
             .build()
 
@@ -56,12 +56,39 @@ class ApiServices(
 
 }
 
-class OffsetDateTimeAdapter : JsonAdapter<OffsetDateTime>() {
-    override fun toJson(writer: JsonWriter, value: OffsetDateTime?) {
+class RetrofitQueryConverterFactory : Converter.Factory() {
+    private class ZonedDateTimeQueryConverter : Converter<ZonedDateTime, String> {
+        companion object {
+            val INSTANCE = ZonedDateTimeQueryConverter()
+        }
+        override fun convert(t: ZonedDateTime): String? {
+            return t.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+        }
+    }
+
+    override fun stringConverter(
+        type: Type,
+        annotations: Array<out Annotation>,
+        retrofit: Retrofit
+    ): Converter<*, String>? {
+        return if (type === ZonedDateTime::class.java) {
+            ZonedDateTimeQueryConverter.INSTANCE
+        } else super.stringConverter(type, annotations, retrofit)
+    }
+
+    companion object {
+        fun create(): RetrofitQueryConverterFactory {
+            return RetrofitQueryConverterFactory()
+        }
+    }
+}
+
+class ZonedDateTimeAdapter : JsonAdapter<ZonedDateTime>() {
+    override fun toJson(writer: JsonWriter, value: ZonedDateTime?) {
         value?.let { writer.value(it.format(formatter)) }
     }
 
-    override fun fromJson(reader: JsonReader): OffsetDateTime? {
+    override fun fromJson(reader: JsonReader): ZonedDateTime? {
         return if (reader.peek() != JsonReader.Token.NULL) {
             fromNonNullString(reader.nextString())
         } else {
@@ -70,9 +97,9 @@ class OffsetDateTimeAdapter : JsonAdapter<OffsetDateTime>() {
         }
     }
 
-    private val formatter = DateTimeFormatter.ISO_DATE_TIME
-    private fun fromNonNullString(nextString: String): OffsetDateTime =
-        OffsetDateTime.parse(nextString, formatter)
+    private val formatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME
+    private fun fromNonNullString(nextString: String): ZonedDateTime =
+        ZonedDateTime.parse(nextString, formatter)
 }
 
 class LocalDateAdapter : JsonAdapter<LocalDate>() {
@@ -89,7 +116,7 @@ class LocalDateAdapter : JsonAdapter<LocalDate>() {
         }
     }
 
-    private val formatter = DateTimeFormatter.ISO_DATE_TIME
+    private val formatter = DateTimeFormatter.ISO_OFFSET_DATE
     private fun fromNonNullString(nextString: String) =
         LocalDate.parse(nextString, formatter)
 }

@@ -1,21 +1,23 @@
 package sg.edu.ntu.scse.labattendancesystem.domain.models
 
-import java.time.OffsetDateTime
+import java.time.ZonedDateTime
 
 data class Course(val id: Int, val code: String, val title: String)
 
 data class GroupStudent(
     val id: Int,
-    val group: Group,
+    val group: Group?,
+    val groupId: Int,
     val student: User,
-    val seat: String,
+    val seat: String?,
 )
 
 data class Group(
     val id: Int,
     val name: String,
     val course: Course,
-    val lab: Lab,
+    val lab: Lab?,
+    val labId: Int,
     val roomNo: Int? = null,
 
     val students: List<GroupStudent>? = null,
@@ -23,7 +25,13 @@ data class Group(
 )
 
 data class Session(
-    val id: Int, val group: Group, val startTime: OffsetDateTime, val endTime: OffsetDateTime
+    val id: Int,
+    val group: Group,
+    val startTime: ZonedDateTime,
+    val endTime: ZonedDateTime,
+    val isCompulsory: Boolean,
+    val allowLateCheckIn: Boolean,
+    val checkInDeadlineMinutes: Int,
 )
 
 enum class AttendanceState(val value: String) {
@@ -44,19 +52,21 @@ enum class AttendanceState(val value: String) {
 }
 
 data class Attendance(
-    val id: Int,
-    val session: Session,
+    val localId: Int,
+    val id: Int?,
+    val session: Session?,
+    val sessionId: Int,
     val attender: User,
     val seat: String?,
     val checkInState: AttendanceState,
-    val checkInDatetime: OffsetDateTime,
-    val lastModify: OffsetDateTime,
+    val checkInDatetime: ZonedDateTime,
+    val lastModify: ZonedDateTime,
 )
 
 data class NewAttendance(
     val sessionId: Int,
     val attenderId: Int,
     val checkInState: String,
-    val checkInDatetime: OffsetDateTime,
-    val lastModify: OffsetDateTime,
+    val checkInDatetime: ZonedDateTime,
+    val lastModify: ZonedDateTime,
 )

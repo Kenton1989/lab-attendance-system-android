@@ -2,7 +2,7 @@ package sg.edu.ntu.scse.labattendancesystem.network.models
 
 import androidx.room.PrimaryKey
 import com.squareup.moshi.Json
-import java.time.OffsetDateTime
+import java.time.ZonedDateTime
 
 data class PaginatedListResp<T>(
     val count: Int,
@@ -16,7 +16,13 @@ data class LabResp(
     val username: String?,
     @Json(name = "display_name") val displayName: String?,
     @Json(name = "room_count") val roomCount: Int?,
-)
+) {
+    fun toUserResp(): UserResp = UserResp(
+        id = id,
+        username = username,
+        displayName = displayName,
+    )
+}
 
 data class CourseResp(val id: Int?, val code: String?, val title: String?)
 
@@ -24,9 +30,12 @@ data class GroupResp(
     val id: Int?,
     val name: String?,
     val course: CourseResp?,
+    val courseId: Int?,
     val lab: LabResp?,
+    val labId: Int?,
     @Json(name = "room_no") val roomNo: Int?,
     val teachers: List<UserResp>?,
+    @Json(name = "teacher_ids") val teacherIds: List<Int>?,
 )
 
 data class GroupStudentResp(
@@ -41,8 +50,12 @@ data class GroupStudentResp(
 data class SessionResp(
     val id: Int?,
     val group: GroupResp?,
-    @Json(name = "start_datetime") val startTime: OffsetDateTime?,
-    @Json(name = "end_datetime") val endTime: OffsetDateTime?,
+    val groupId: Int?,
+    @Json(name = "start_datetime") val startTime: ZonedDateTime?,
+    @Json(name = "end_datetime") val endTime: ZonedDateTime?,
+    @Json(name = "is_compulsory") val isCompulsory: Boolean?,
+    @Json(name = "allow_late_check_in") val allowLateCheckIn: Boolean?,
+    @Json(name = "check_in_deadline_mins") val checkInDeadlineMinutes: Int?,
 )
 
 data class MakeUpSessionResp(
@@ -61,14 +74,14 @@ data class AttendanceResp(
     val attender: UserResp?,
     @Json(name = "attender_id") val attenderId: Int?,
     @Json(name = "check_in_state") val checkInState: String?,
-    @Json(name = "check_in_datetime") val checkInDatetime: OffsetDateTime?,
-    @Json(name = "last_modify") val lastModify: OffsetDateTime?,
+    @Json(name = "check_in_datetime") val checkInDatetime: ZonedDateTime?,
+    @Json(name = "last_modify") val lastModify: ZonedDateTime?,
 )
 
 data class NewAttendanceReq(
     @Json(name = "session_id") val sessionId: Int,
     @Json(name = "attender_id") val attenderId: Int,
     @Json(name = "check_in_state") val checkInState: String?,
-    @Json(name = "check_in_datetime") val checkInDatetime: OffsetDateTime?,
-    @Json(name = "last_modify") val lastModify: OffsetDateTime?,
+    @Json(name = "check_in_datetime") val checkInDatetime: ZonedDateTime?,
+    @Json(name = "last_modify") val lastModify: ZonedDateTime?,
 )

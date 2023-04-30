@@ -26,6 +26,7 @@ fun GroupResp.toDomainModel() = Group(
     name = name!!,
     course = course!!.toDomainModel(),
     lab = lab!!.toDomainModel(),
+    labId = lab.id!!,
     roomNo = roomNo,
 
     students = null,
@@ -37,11 +38,16 @@ fun SessionResp.toDomainModel() = Session(
     group = group!!.toDomainModel(),
     startTime = startTime!!,
     endTime = endTime!!,
+    isCompulsory = isCompulsory!!,
+    allowLateCheckIn = allowLateCheckIn!!,
+    checkInDeadlineMinutes = checkInDeadlineMinutes!!,
 )
 
 fun AttendanceResp.toDomainModel() = Attendance(
+    localId = -1,
     id = id!!,
     session = session!!.toDomainModel(),
+    sessionId = session.id!!,
     attender = attender!!.toDomainModel(),
     seat = null,
     checkInState = AttendanceState.fromValue(checkInState!!),

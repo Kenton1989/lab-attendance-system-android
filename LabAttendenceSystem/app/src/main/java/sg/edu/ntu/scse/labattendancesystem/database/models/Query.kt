@@ -3,8 +3,17 @@ package sg.edu.ntu.scse.labattendancesystem.database.models
 import androidx.room.Embedded
 import androidx.room.Junction
 import androidx.room.Relation
-import java.time.OffsetDateTime
+import java.time.ZonedDateTime
 
+data class LabWithUser(
+    @Embedded val data: DbLab,
+    @Relation(
+        parentColumn = "id",
+        entityColumn = "id"
+    )
+    val user: DbUser,
+
+)
 
 data class GroupWithCourse(
     @Embedded val data: DbGroup,
@@ -72,6 +81,16 @@ data class MakeUpSessionWithOriginalSessionAndStudent(
         entityColumn = "id",
     )
     val originalSessionId: DbSession,
+)
+
+data class SessionWithGroupDetails(
+    @Embedded val data: DbSession,
+    @Relation(
+        entity = DbGroup::class,
+        parentColumn = "groupId",
+        entityColumn = "id",
+    )
+    val group: GroupWithDetails,
 )
 
 data class SessionWithGroupDetailsAndMakeUps(
