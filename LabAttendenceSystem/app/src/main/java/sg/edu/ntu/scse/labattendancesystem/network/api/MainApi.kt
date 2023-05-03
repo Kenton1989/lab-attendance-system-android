@@ -7,6 +7,9 @@ import sg.edu.ntu.scse.labattendancesystem.network.models.*
 import java.time.ZonedDateTime
 
 interface MainApi {
+    @GET("sessions/{id}?fields=id,group,start_datetime,end_datetime,is_compulsory,allow_late_check_in,check_in_deadline_mins")
+    suspend fun getSession(@Path("id") id: Int): SessionResp
+
     @GET("sessions?fields=id,group,start_datetime,end_datetime,is_compulsory,allow_late_check_in,check_in_deadline_mins")
     suspend fun getSessions(
         @Query("group") groupId: Int? = null,
@@ -60,5 +63,5 @@ interface MainApi {
         @Query("limit") pageLimit: Int = 200,
         @Query("offset") pageOffset: Int = 0,
         @Query("is_active") isActive: Boolean? = true,
-    ): List<GroupStudentResp>
+    ): PaginatedListResp<GroupStudentResp>
 }

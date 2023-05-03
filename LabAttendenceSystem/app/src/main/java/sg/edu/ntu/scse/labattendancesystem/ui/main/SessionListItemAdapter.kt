@@ -49,9 +49,10 @@ class SessionListItemAdapter(
         }
         holder.binding.apply {
             sessionTitle.text = context.resources.getString(
-                R.string.course_group,
-                session.group.course.code,
+                R.string.group_course_tag,
                 session.group.name,
+                session.group.course.code,
+                if (session.isCompulsory) "" else "(optional)"
             )
             sessionTime.text = context.resources.getString(
                 R.string.time_range,
@@ -84,7 +85,7 @@ class SessionListItemAdapter(
     }
 
     private fun updateSelectedSession(holder: ItemViewHolder, session: Session) {
-        viewModel.updateSelectedSession(session)
+        viewModel.updateSelectedSession(session.id)
         onSessionSelected(session)
         lastSelectedHolder = holder
     }

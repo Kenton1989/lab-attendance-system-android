@@ -55,9 +55,20 @@ class SessionListFragment : Fragment() {
         )
         binding.sessionListRecycler.adapter = sessionItemAdapter
 
+        Log.d(TAG, "Watching activeSessionList")
         viewModel.activeSessionList.observe(viewLifecycleOwner) {
             Log.d(TAG, if (it != null) "loaded: ${it.size}" else "loading session list")
+
             sessionItemAdapter.sessions = it ?: listOf()
+
+            binding.loadingActiveSessionHint.visibility = View.GONE
+            if (sessionItemAdapter.sessions.isEmpty()) {
+                binding.noActiveSessionHint.visibility = View.VISIBLE
+                binding.sessionListRecycler.visibility = View.GONE
+            } else {
+                binding.noActiveSessionHint.visibility = View.GONE
+                binding.sessionListRecycler.visibility = View.VISIBLE
+            }
         }
     }
 

@@ -1,26 +1,47 @@
 package sg.edu.ntu.scse.labattendancesystem.repository
 
 import android.util.Log
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.withTimeout
 import retrofit2.HttpException
 import retrofit2.Response
+import sg.edu.ntu.scse.labattendancesystem.LabAttendanceSystemApplication
 import sg.edu.ntu.scse.labattendancesystem.domain.models.Result
 import java.net.HttpURLConnection
 
-abstract class BaseRepository {
+abstract class BaseRepository(
+    protected val app: LabAttendanceSystemApplication,
+    protected val externalScope: CoroutineScope,
+    protected val defaultDispatcher: CoroutineDispatcher = Dispatchers.IO,
+) {
     companion object {
         private val TAG = BaseRepository::class.java.simpleName
         private const val REQUEST_TIMEOUT_MS = 10000L
     }
 
+    private val deferredInit: Deferred<Any>
+
+    init {
+        Log.d(TAG, "init started")
+        deferredInit = externalScope.async(defaultDispatcher) { asyncInit() }
+    }
+
+    open fun cleanUp() {}
+
+    suspend fun awaitForInitDone() {
+        withContext(defaultDispatcher) {
+            deferredInit.await()
+        }
+    }
+
+    protected open suspend fun asyncInit() {}
+
     /**
      * Helper function for tracing the loading status of suspended function
      */
-    fun <T> load(call: suspend () -> T): Flow<Result<T>> = flow {
+    fun <T> loadFromNet(call: suspend () -> T): Flow<Result<T>> = flow {
         emit(Result.Loading)
+        deferredInit.await()
         withTimeout(REQUEST_TIMEOUT_MS) {
             try {
                 val result = call()
@@ -61,10 +82,8 @@ abstract class BaseRepository {
         } else {
             throw it
         }
-    }.flowOn(Dispatchers.IO).onEach {
-        if (it is Result.Success) Log.d(TAG, "result: success")
+    }.onEach {
+        if (it is Result.Success) Log.d(TAG, "result: $it")
         else Log.d(TAG, "result: $it")
-    }
-
-
+    }.flowOn(Dispatchers.IO)
 }

@@ -15,7 +15,7 @@ class TokenManager(
 ) {
     companion object {
         val AUTH_TOKEN_KEY = stringPreferencesKey("auth_token")
-        val TAG = TokenManager::class.java.simpleName
+        val TAG: String = TokenManager::class.java.simpleName
     }
 
     private var _cachedToken: String? = null;

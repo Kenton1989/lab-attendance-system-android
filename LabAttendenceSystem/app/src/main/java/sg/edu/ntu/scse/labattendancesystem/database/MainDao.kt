@@ -3,13 +3,14 @@ package sg.edu.ntu.scse.labattendancesystem.database
 import androidx.room.*
 import kotlinx.coroutines.flow.Flow
 import sg.edu.ntu.scse.labattendancesystem.database.models.*
+import java.time.ZonedDateTime
 
 @Dao
 interface MainDao {
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     fun insertUsers(models: Collection<DbUser>)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     fun insertLabs(models: Collection<DbLab>)
 
     @Query("SELECT *  FROM course_tb;")
@@ -18,7 +19,7 @@ interface MainDao {
     @Query("SELECT * FROM course_tb WHERE id = :id;")
     fun getCourse(id: Int): Flow<DbCourse>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     fun insertCourses(models: Collection<DbCourse>)
 
     @Transaction
@@ -33,19 +34,19 @@ interface MainDao {
     @Query("SELECT * FROM group_tb WHERE id = :id;")
     fun getDetailGroup(id: Int): Flow<GroupWithDetails>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertGroups(models: Collection<DbGroup>)
+    @Upsert
+    fun insertOrUpdateGroups(models: Collection<DbGroup>)
 
     @RewriteQueriesToDropUnusedColumns
     @Query("SELECT * FROM user_tb JOIN group_teacher_tb ON id = teacherId WHERE groupId = :groupId")
     fun getTeachersOfGroup(groupId: Int): Flow<List<DbUser>>
 
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertGroupTeachers(models: Collection<DbGroupTeacher>)
+    @Upsert
+    fun insertOrUpdateGroupTeachers(models: Collection<DbGroupTeacher>)
 
-    fun insertGroupTeachers(groupId: Int, teacherId: List<Int>) =
-        insertGroupTeachers(teacherId.map {
+    fun insertOrUpdateGroupTeachers(groupId: Int, teacherId: List<Int>) =
+        insertOrUpdateGroupTeachers(teacherId.map {
             DbGroupTeacher(
                 groupId = groupId, teacherId = it
             )
@@ -55,30 +56,46 @@ interface MainDao {
     @Query("SELECT * FROM group_student_tb WHERE groupId = :groupId")
     fun getStudentsOfGroup(groupId: Int): Flow<List<GroupStudentWithUser>>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertGroupStudents(models: Collection<DbGroupStudent>)
+    @Upsert
+    fun insertOrUpdateGroupStudents(models: Collection<DbGroupStudent>)
 
     @Transaction
     @Query("SELECT * FROM session_tb;")
     fun getAllBriefSessions(): Flow<List<SessionWithCourseGroup>>
 
     @Transaction
-    @Query("SELECT * FROM session_tb WHERE id = :id;")
-    fun getBriefSessions(id: Int): Flow<List<SessionWithCourseGroup>>
+    @Query(
+        "SELECT * FROM session_tb " +
+                "JOIN group_tb ON groupId = group_tb.id " +
+                "WHERE startTime <= :startTimeBefore " +
+                "AND :endTimeAfter < endTime " +
+                "AND (:roomNo IS NULL OR :roomNo == group_tb.roomNo)" +
+                "AND (:labId IS NULL OR :labId == group_tb.labId)"
+    )
+    fun getActiveBriefSessions(
+        labId: Int? = null,
+        roomNo: Int? = null,
+        endTimeAfter: ZonedDateTime = ZonedDateTime.now(),
+        startTimeBefore: ZonedDateTime = ZonedDateTime.now().minusMinutes(15),
+    ): Flow<List<SessionWithCourseGroup>>
 
     @Transaction
     @Query("SELECT * FROM session_tb WHERE id = :id;")
-    fun getDetailSessions(id: Int): Flow<List<SessionWithGroupDetailsAndMakeUps>>
+    fun getBriefSession(id: Int): Flow<SessionWithCourseGroup>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertSessions(models: Collection<DbSession>)
+    @Transaction
+    @Query("SELECT * FROM session_tb WHERE id = :id;")
+    fun getDetailSession(id: Int): Flow<SessionWithGroupDetails>
+
+    @Upsert
+    fun insertOrUpdateSessions(models: Collection<DbSession>)
 
     @Transaction
     @Query("SELECT * FROM make_up_session_tb WHERE makeUpSessionId = :makeUpSessionId;")
     fun getMakeUpSessions(makeUpSessionId: Int): Flow<List<MakeUpSessionWithOriginalSessionAndStudent>>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertMakeUpSessions(models: Collection<DbMakeUpSession>)
+    @Upsert
+    fun insertOrUpdateMakeUpSessions(models: Collection<DbMakeUpSession>)
 
     @Transaction
     @Query("SELECT * FROM student_attendance_tb WHERE id = :id;")
@@ -88,8 +105,8 @@ interface MainDao {
     @Query("SELECT * FROM student_attendance_tb WHERE sessionId = :sessionId;")
     fun getStudentAttendancesOfSession(sessionId: Int): Flow<List<StudentAttendanceWithAttender>>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertStudentAttendances(models: Collection<DbStudentAttendance>)
+    @Upsert
+    fun insertOrUpdateStudentAttendances(models: Collection<DbStudentAttendance>)
 
     @Transaction
     @Query("SELECT * FROM teacher_attendance_tb WHERE id = :id;")
@@ -99,6 +116,6 @@ interface MainDao {
     @Query("SELECT * FROM teacher_attendance_tb WHERE sessionId = :sessionId;")
     fun getTeacherAttendancesOfSession(sessionId: Int): Flow<List<TeacherAttendanceWithAttender>>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertTeacherAttendances(models: Collection<DbTeacherAttendance>)
+    @Upsert
+    fun insertOrUpdateTeacherAttendances(models: Collection<DbTeacherAttendance>)
 }

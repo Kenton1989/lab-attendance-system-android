@@ -4,115 +4,101 @@ import android.util.Log
 import androidx.work.WorkManager
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.transform
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import sg.edu.ntu.scse.labattendancesystem.LabAttendanceSystemApplication
 import sg.edu.ntu.scse.labattendancesystem.domain.models.*
-import sg.edu.ntu.scse.labattendancesystem.network.ApiServices
-import sg.edu.ntu.scse.labattendancesystem.network.SessionManager
-import sg.edu.ntu.scse.labattendancesystem.network.TokenManager
 import java.time.ZonedDateTime
 
 class MainRepository(
-    private val app: LabAttendanceSystemApplication,
-    private val externalScope: CoroutineScope,
-    private val defaultDispatcher: CoroutineDispatcher = Dispatchers.IO,
-) : BaseRepository() {
+    app: LabAttendanceSystemApplication,
+    externalScope: CoroutineScope,
+    defaultDispatcher: CoroutineDispatcher = Dispatchers.IO,
+) : BaseRepository(
+    app,
+    externalScope,
+    defaultDispatcher,
+) {
     companion object {
         val TAG: String = MainRepository::class.java.simpleName
+        fun getTokenManager() {
+
+        }
     }
 
     private val workManager = WorkManager.getInstance(app)
-    private val tokenManager = app.tokenManager
-    private val sessionManager = SessionManager(tokenManager, ApiServices.token)
-    private val apiServices = ApiServices(tokenManager)
+    private val tokenManager get() = app.tokenManager
+    private val sessionManager get() = app.sessionManager
     private val mainDb = app.database.mainDao()
+    private val loginHistory get() = app.loginHistoryStore
     private val syncer = DataSyncer(
         app.apiServices.main,
         mainDb,
         workManager,
     )
-    private val deferredInit: Deferred<Any>
     private lateinit var labCache: Lab
+    private var roomCache: Int? = null
 
-    init {
-        Log.d(TAG, "init started")
-        deferredInit = externalScope.async(defaultDispatcher) { asyncInit() }
-    }
+    val online: Flow<Boolean> = syncer.lastNetworkRequestSucceeded
+    val syncing: Flow<Boolean> = syncer.syncing
 
-    fun cleanUp() {
-        syncer.stopSync()
-    }
-
-    suspend fun awaitForInitDone() {
-        withContext(defaultDispatcher) {
-            deferredInit.await()
+    val activeSessions: Flow<List<Session>>
+        get() = mainDb.getActiveBriefSessions(
+            labId = labCache.id,
+            roomNo = roomCache,
+            startTimeBefore = ZonedDateTime.now().plusYears(1),
+            endTimeAfter = ZonedDateTime.now().minusYears(1),
+        ).map { l ->
+            Log.d(TAG, "get ${l.size} sessions")
+            l.map { it.toDomainModel() }
         }
-    }
 
-    private suspend fun asyncInit() {
+    override suspend fun asyncInit() {
+        super.asyncInit()
         tokenManager.setUpTokenCache(externalScope, defaultDispatcher)
         Log.d(TAG, "token cache init done")
-        initLabCache()
+
+        labCache = sessionManager.getCurrentLab().toDomainModel()
+        roomCache = loginHistory.lastLoginRoomNo.first()
         Log.d(TAG, "lab cache init done")
+
         syncer.labId = labCache.id
-        syncer.startSync()
-        syncer.syncOnce()
+        syncer.syncAllOnce()
+        syncer.startPeriodicSyncAll()
         Log.d(TAG, "main repo init done")
     }
 
-    private suspend fun initLabCache() {
-        labCache = sessionManager.getCurrentLab().toDomainModel()
+    fun refreshData() {
+        syncer.syncAllOnce()
     }
 
-    private fun <T> safeLoad(call: suspend () -> T) = load {
-        deferredInit.await()
-        call()
-    }
-
-    fun getRecentSessions(): Flow<Result<List<Session>>> {
-        return safeLoad {
-            getRecentSessionsImpl()
+    fun getBriefSession(sessionId: Int): Flow<Session> {
+        return mainDb.getBriefSession(sessionId).map {
+            it.toDomainModel()
         }
     }
 
-    fun getActiveSessions(): Flow<Result<List<Session>>> {
-        return safeLoad {
-            getActiveSessionsImpl()
+    fun getDetailSession(sessionId: Int): Flow<Session> {
+        return mainDb.getDetailSession(sessionId).map {
+            it.toDomainModel()
         }
     }
 
-    fun getStudentAttendances(session: Session): Flow<List<Attendance>> {
-        return mainDb.getStudentAttendancesOfSession(sessionId = session.id).transform {
-
+    fun getDetailGroup(groupId: Int): Flow<Group> {
+        return mainDb.getDetailGroup(groupId).map {
+            it.toDomainModel()
         }
     }
 
-    fun getTeacherAttendances(session: Session): Flow<List<Attendance>> {
-        return mainDb.getTeacherAttendancesOfSession(sessionId = session.id).transform {
-
+    fun getDbStudentAttendances(sessionId: Int): Flow<List<Attendance>> {
+        return mainDb.getStudentAttendancesOfSession(sessionId = sessionId).map { l ->
+            l.map { it.toDomainModel() }
         }
     }
 
-    private suspend fun getActiveSessionsImpl(): List<Session> {
-        val labId = labCache.id
-        val now = ZonedDateTime.now()
-        // TODO: fix the instruction
-        val resp = apiServices.main.getSessions(
-            labId = labId,
-//            startDateTimeAfter = now,
-            pageLimit = 10,
-        )
-
-        return resp.results.map { it.toDomainModel() }
-    }
-
-
-    private suspend fun getRecentSessionsImpl(): List<Session> {
-        val labId = labCache.id
-        val resp = apiServices.main.getSessions(
-            labId = labId,
-            pageLimit = 10,
-        )
-        return resp.results.map { it.toDomainModel() }
+    fun getDbTeacherAttendances(sessionId: Int): Flow<List<Attendance>> {
+        return mainDb.getTeacherAttendancesOfSession(sessionId = sessionId).map { l ->
+            l.map { it.toDomainModel() }
+        }
     }
 }

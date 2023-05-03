@@ -130,7 +130,7 @@ data class DbGroupTeacher(
             onDelete = ForeignKey.CASCADE,
         ),
     ],
-    indices = [Index("groupId", unique = true)],
+    indices = [Index("groupId", "startTime", unique = true)],
 )
 data class DbSession(
     @PrimaryKey(autoGenerate = false) val id: Int,

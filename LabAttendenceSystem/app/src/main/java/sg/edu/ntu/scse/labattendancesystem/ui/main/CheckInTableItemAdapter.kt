@@ -13,7 +13,6 @@ import androidx.recyclerview.widget.RecyclerView
 import sg.edu.ntu.scse.labattendancesystem.R
 import sg.edu.ntu.scse.labattendancesystem.databinding.ItemCheckInTableBinding
 import sg.edu.ntu.scse.labattendancesystem.domain.models.Attendance
-import sg.edu.ntu.scse.labattendancesystem.domain.models.AttendanceState
 
 
 class CheckInTableItemAdapter(
@@ -35,7 +34,7 @@ class CheckInTableItemAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ItemViewHolder {
         val binding: ItemCheckInTableBinding = DataBindingUtil.inflate(
             LayoutInflater.from(parent.context),
-            R.layout.item_session_list,
+            R.layout.item_check_in_table,
             parent,
             false,
         )
@@ -58,15 +57,23 @@ class CheckInTableItemAdapter(
             tableRow.setOnClickListener {
                 onItemClicked(holder, attendance)
             }
+            
+            renderCheckInState(holder, attendance)
+        }
+    }
 
+    private fun renderCheckInState(holder: ItemViewHolder, attendance: Attendance) {
+        holder.binding.apply {
             if (attendance.checkInState.isAbsent()) {
                 checkedIn.text = getString(R.string.absent_mark)
-                tableRow.setBackgroundColor(getColor(R.color.failure_background))
+                if (attendance.session!!.isCompulsory)
+                    tableRow.setBackgroundColor(getColor(R.color.warning_background))
+                else
+                    tableRow.setBackgroundColor(getColor(R.color.no_background))
             } else {
                 checkedIn.text = getString(R.string.attended_mark)
                 tableRow.setBackgroundColor(getColor(R.color.success_background))
             }
-
         }
     }
 

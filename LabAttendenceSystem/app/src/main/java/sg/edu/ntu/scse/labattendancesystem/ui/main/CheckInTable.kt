@@ -1,6 +1,7 @@
 package sg.edu.ntu.scse.labattendancesystem.ui.main
 
 import android.app.AlertDialog
+import android.util.Log
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.lifecycleScope
@@ -21,6 +22,10 @@ class CheckInTable(
     private val onUndoCheckIn: (a: Attendance) -> Any = { TODO("Undo not Allowed") },
     private val onCheckIn: (a: Attendance) -> Any,
 ) {
+    companion object {
+        val TAG: String = CheckInTable::class.java.simpleName
+    }
+
     init {
         setUpRecyclerView()
     }
@@ -52,6 +57,7 @@ class CheckInTable(
     }
 
     private fun handleCheckIn(attendance: Attendance) {
+        Log.d(TAG, "checking in")
         val builder = AlertDialog.Builder(parent.requireContext())
         val username = attendance.attender.username
         val name = attendance.attender.displayName
@@ -60,10 +66,12 @@ class CheckInTable(
             .setPositiveButton("YES") { _, _ -> onCheckIn(attendance) }
             .setNegativeButton("NO") { _, _ -> }
         val dialog = builder.create()
+        dialog.show()
         freezeDialogPositiveButton(dialog)
     }
 
     private fun handleUndoCheckIn(attendance: Attendance) {
+        Log.d(TAG, "undo checking in")
         val builder = AlertDialog.Builder(parent.requireContext())
         val username = attendance.attender.username
         val name = attendance.attender.displayName
@@ -72,6 +80,7 @@ class CheckInTable(
             .setPositiveButton("YES") { _, _ -> onUndoCheckIn(attendance) }
             .setNegativeButton("NO") { _, _ -> }
         val dialog = builder.create()
+        dialog.show()
         freezeDialogPositiveButton(dialog)
     }
 
@@ -89,7 +98,8 @@ class CheckInTable(
                 delay(delayDuration)
                 remainMills -= delayDuration
             }
-            button.isEnabled = false
+            button.text = oldText
+            button.isEnabled = true
         }
     }
 }

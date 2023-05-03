@@ -8,11 +8,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withTimeout
 import sg.edu.ntu.scse.labattendancesystem.database.MainDao
-import sg.edu.ntu.scse.labattendancesystem.database.models.DbGroup
 import sg.edu.ntu.scse.labattendancesystem.database.models.DbGroupStudent
 import sg.edu.ntu.scse.labattendancesystem.database.models.DbGroupTeacher
-import sg.edu.ntu.scse.labattendancesystem.database.models.DbSession
 import sg.edu.ntu.scse.labattendancesystem.domain.models.toDatabaseModel
+import sg.edu.ntu.scse.labattendancesystem.domain.models.toDbStudentAttendance
+import sg.edu.ntu.scse.labattendancesystem.domain.models.toDbTeacherAttendance
 import sg.edu.ntu.scse.labattendancesystem.network.api.MainApi
 import sg.edu.ntu.scse.labattendancesystem.network.models.*
 import java.time.*
@@ -24,7 +24,8 @@ class DataSyncer(
     private val workManager: WorkManager,
     initLabId: Int? = null,
     private val netRequestTimeoutMillis: Long = 10000,
-    private val cacheInAdvanceTimeRange: Duration = Duration.ofDays(3),
+    private val cacheExpireAfterTimeRange: Duration = Duration.ofDays(7),
+    private val cacheInAdvanceTimeRange: Duration = Duration.ofDays(7),
     private val syncInterval: Duration = Duration.ofMinutes(15),
     onlineInitVal: Boolean = true,
 ) {
@@ -41,8 +42,8 @@ class DataSyncer(
         }
     }
 
-    private val _online = MutableStateFlow(onlineInitVal)
-    val online: StateFlow<Boolean> get() = _online;
+    private val _lastNetworkRequestSucceeded = MutableStateFlow(onlineInitVal)
+    val lastNetworkRequestSucceeded: StateFlow<Boolean> get() = _lastNetworkRequestSucceeded;
 
     private val _syncing = MutableStateFlow(false)
     val syncing: StateFlow<Boolean> get() = _syncing;
@@ -50,18 +51,12 @@ class DataSyncer(
     var labId: Int? = null
         set(value) {
             if (value == field) return
-            Log.d(TAG, "setting labId $field -> $value")
 
+            Log.d(TAG, "setting labId $field -> $value")
             field?.let { labSyncer.remove(it) }
             value?.let { labSyncer[it] = this }
             field = value
         }
-
-    private var lastDownloadedSessions: Collection<DbSession>? = null
-    private var lastDownloadedGroups: Collection<DbGroup>? = null
-    private var lastDownloadedCourses: Collection<CourseResp>? = null
-    private var lastDownloadedLabs: Collection<LabResp>? = null
-    private var lastDownloadedUsers: Collection<UserResp>? = null
 
     init {
         labId = initLabId
@@ -78,77 +73,132 @@ class DataSyncer(
         }
 
         override suspend fun doWork(): Result {
-            syncer.doSyncJob()
+            syncer.syncAll()
             return Result.success()
         }
     }
 
-    suspend fun doSyncJob() {
-        _syncing.value = true
-        downloadSessions()
-        _syncing.value = false
+    suspend fun syncAll() {
+        withSyncFlag {
+            saveAllSessionsOfCurrentLab()
+        }
     }
 
-    fun syncOnce() {
+    fun syncAllOnce() {
         if (labId == null) throw NullPointerException("you must set labId before sync")
 
-        val data = Data.Builder()
-            .putInt(SYNCING_LAB, labId!!)
-            .build()
+        val data = Data.Builder().putInt(SYNCING_LAB, labId!!).build()
 
-        val work = OneTimeWorkRequestBuilder<SyncWorker>()
-            .setInputData(data)
-            .build()
+        val work = OneTimeWorkRequestBuilder<SyncWorker>().setInputData(data).build()
 
         _syncing.value = true
-        workManager
-            .beginUniqueWork(SYNC_ONCE_WORK_NAME, ExistingWorkPolicy.KEEP, work)
-            .enqueue()
+        workManager.beginUniqueWork(SYNC_ONCE_WORK_NAME, ExistingWorkPolicy.KEEP, work).enqueue()
     }
 
-    fun startSync() {
+    fun startPeriodicSyncAll() {
         if (labId == null) throw NullPointerException("you must set labId before startSync")
 
-        val data = Data.Builder()
-            .putInt(SYNCING_LAB, labId!!)
-            .build()
+        val data = Data.Builder().putInt(SYNCING_LAB, labId!!).build()
 
-        val work = PeriodicWorkRequest.Builder(SyncWorker::class.java, syncInterval)
-            .setInputData(data)
-            .build()
+        val work =
+            PeriodicWorkRequest.Builder(SyncWorker::class.java, syncInterval).setInputData(data)
+                .build()
 
         workManager.enqueueUniquePeriodicWork(
-            PERIODIC_SYNC_WORK_NAME,
-            ExistingPeriodicWorkPolicy.KEEP,
-            work
+            PERIODIC_SYNC_WORK_NAME, ExistingPeriodicWorkPolicy.KEEP, work
         )
         Log.d(TAG, "started syncing")
     }
 
 
-    fun stopSync() {
+    fun stopPeriodicSyncAll() {
         workManager.cancelUniqueWork(PERIODIC_SYNC_WORK_NAME)
     }
 
+    suspend fun syncSession(sessionId: Int) {
+        sync(
+            download = { api.getSession(sessionId) },
+            save = { saveSessions(listOf(it)) }
+        )
+    }
 
-    private suspend fun downloadSessions(): Boolean {
-        Log.d(TAG, "started downloading sessions")
-        val sessions = fetchSessions(labId!!) ?: return false
-        if (!downloadGroupsOfSessions(sessions)) return false
-        val dbSessions = sessions.map { it.toDatabaseModel() }
-        if (lastDownloadedSessions != dbSessions) {
-            db.insertSessions(dbSessions)
-            lastDownloadedSessions = dbSessions
+    suspend fun syncGroup(groupId: Int) {
+        sync(
+            download = { api.getGroup(groupId) },
+            save = { saveGroups(listOf(it)) }
+        )
+    }
+
+    suspend fun syncStudentAttendanceOfSession(sessionId: Int) {
+        sync(
+            download = { api.getStudentAttendances(sessionId = sessionId).results },
+            save = { l -> db.insertOrUpdateStudentAttendances(l.map { it.toDbStudentAttendance() }) }
+        )
+    }
+
+    suspend fun syncTeacherAttendanceOfSession(sessionId: Int) {
+        sync(
+            download = { api.getTeacherAttendances(sessionId = sessionId).results },
+            save = { l -> db.insertOrUpdateStudentAttendances(l.map { it.toDbTeacherAttendance() }) }
+        )
+    }
+
+    private suspend fun <T> withSyncFlag(f: suspend () -> T): T {
+        _syncing.value = true;
+        return try {
+            f();
+        } finally {
+            _syncing.value = false;
         }
+    }
+
+    private suspend fun <T : Any> sync(
+        download: suspend () -> T?,
+        save: suspend (T) -> Any?,
+        onError: (e: Exception) -> Any? = { Log.e(TAG, it.toString()); throw it; }
+    ) {
+        return withSyncFlag {
+            try {
+                val s = safeNetReq { download() }
+                if (s != null) {
+                    save(s)
+                }
+            } catch (e: Exception) {
+                onError(e)
+            }
+        }
+    }
+
+    private suspend fun saveAllSessionsOfCurrentLab(): Boolean {
+        if (labId == null) throw NullPointerException("you must set labId before syncAllSessions")
+
+        val sessions = fetchSessionsOfLab(labId!!) ?: return false
+        Log.d(TAG, "saving ${sessions.size} sessions for current lab")
+        saveSessions(sessions)
+
+        return true
+    }
+
+    private suspend fun saveSessions(sessions: List<SessionResp>): Boolean {
+        Log.d(TAG, "started downloading sessions")
+
+        val groups = sessions.map { it.group!! }.distinctBy { it.id!! }.sortedBy { it.id }
+        if (!saveGroups(groups)) return false
+        val dbSessions = sessions.map { it.toDatabaseModel() }
+        db.insertOrUpdateSessions(dbSessions)
+
         Log.d(TAG, "finished downloading sessions")
         return true
     }
 
-    private suspend fun downloadGroupsOfSessions(sessions: List<SessionResp>): Boolean {
+    private suspend fun saveGroups(groups: List<GroupResp>): Boolean {
         Log.d(TAG, "started downloading groups")
-        val groups = sessions.map { it.group!! }.distinctBy { it.id!! }.sortedBy { it.id }
-        if (!downloadLabsOfGroups(groups)) return false
-        if (!downloadCoursesOfGroups(groups)) return false
+
+        val labs = groups.map { it.lab!! }.distinctBy { it.id!! }.sortedBy { it.id }
+        if (!saveLabs(labs)) return false
+
+        val courses = groups.map { it.course!! }.distinctBy { it.id!! }.sortedBy { it.id }
+        if (!saveCourses(courses)) return false
 
         val allTeachers = mutableSetOf<DbGroupTeacher>()
         val allStudents = mutableSetOf<DbGroupStudent>()
@@ -165,77 +215,65 @@ class DataSyncer(
         }
 
         val dbGroups = groups.map { it.toDatabaseModel() }
-        if (dbGroups != lastDownloadedGroups) {
-            db.insertGroups(dbGroups)
-            lastDownloadedGroups = dbGroups
-        }
-        db.insertGroupTeachers(allTeachers)
-        db.insertGroupStudents(allStudents)
-        if (lastDownloadedUsers != allUsers) {
-            db.insertUsers(allUsers.map { it.toDatabaseModel() })
-            lastDownloadedUsers = allUsers
-        }
+        db.insertOrUpdateGroups(dbGroups)
+        db.insertUsers(allUsers.map { it.toDatabaseModel() })
+        db.insertOrUpdateGroupTeachers(allTeachers)
+        db.insertOrUpdateGroupStudents(allStudents)
+
         Log.d(TAG, "finished downloading groups")
         return true
     }
 
-    private suspend fun downloadCoursesOfGroups(groups: List<GroupResp>): Boolean {
+    private suspend fun saveCourses(courses: List<CourseResp>): Boolean {
         Log.d(TAG, "started downloading courses")
-        val courses = groups.map { it.course!! }.distinctBy { it.id!! }.sortedBy { it.id }
-        if (courses != lastDownloadedCourses) {
-            db.insertCourses(courses.map { it.toDatabaseModel() })
-            lastDownloadedCourses = courses
-        }
+        db.insertCourses(courses.map { it.toDatabaseModel() })
         Log.d(TAG, "finished downloading courses")
         return true
     }
 
-    private suspend fun downloadLabsOfGroups(groups: List<GroupResp>): Boolean {
+    private suspend fun saveLabs(labs: List<LabResp>): Boolean {
         Log.d(TAG, "started downloading labs")
-        val labs = groups.map { it.lab!! }.distinctBy { it.id!! }.sortedBy { it.id }
-        if (labs != lastDownloadedLabs) {
-            db.insertUsers(labs.map { it.toUserResp().toDatabaseModel() })
-            db.insertLabs(labs.map { it.toDatabaseModel() })
-            lastDownloadedLabs = labs
-        }
+        db.insertUsers(labs.map { it.toUserResp().toDatabaseModel() })
+        db.insertLabs(labs.map { it.toDatabaseModel() })
         Log.d(TAG, "finished downloading labs")
         return true
     }
 
     private suspend fun fetchGroupTeachers(groupId: Int): List<UserResp>? {
-        return netFetch {
+        Log.d(TAG, "fetchGroupTeachers")
+        return safeNetReq {
             api.getGroupTeachers(groupId = groupId).teachers
         }
     }
 
     private suspend fun fetchGroupStudents(groupId: Int): List<GroupStudentResp>? {
-        return netFetch {
-            api.getStudentsOfGroup(groupId = groupId)
+        Log.d(TAG, "fetchGroupStudents")
+        return safeNetReq {
+            api.getStudentsOfGroup(groupId = groupId).results
         }
     }
 
-    private suspend fun fetchSessions(labId: Int): List<SessionResp>? {
-        val rangeBeg = ZonedDateTime.now().truncatedTo(ChronoUnit.DAYS)
-        val rangeEnd = rangeBeg + cacheInAdvanceTimeRange
-        return netFetch {
+    private suspend fun fetchSessionsOfLab(labId: Int): List<SessionResp>? {
+        val now = ZonedDateTime.now().truncatedTo(ChronoUnit.DAYS)
+        val rangeBeg = now - cacheExpireAfterTimeRange
+        val rangeEnd = now + cacheInAdvanceTimeRange
+        return safeNetReq {
             api.getSessions(
-                labId = labId,
-                startDateTimeAfter = rangeBeg,
-                startDateTimeBefore = rangeEnd
+                labId = labId, startDateTimeAfter = rangeBeg, startDateTimeBefore = rangeEnd
             ).results
         }
     }
 
-    private suspend fun <T> netFetch(f: suspend () -> T): T? {
+    private suspend fun <T> safeNetReq(f: suspend () -> T): T? {
         return try {
             withTimeout(netRequestTimeoutMillis) {
                 val result = f()
-                _online.value = true
+                _lastNetworkRequestSucceeded.value = true
                 result
             }
         } catch (e: TimeoutCancellationException) {
             Log.d(TAG, "network timeout, maybe offline")
-            _online.value = false
+            _lastNetworkRequestSucceeded.value = false
             null
         }
     }

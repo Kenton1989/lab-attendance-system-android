@@ -7,42 +7,55 @@
     </data>
 
     <LinearLayout
-        android:id="@+id/table_row"
-        style="@style/TableRow"
-        android:background="@color/failure_background"
-        android:orientation="horizontal">
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:id="@+id/table_row"
+            style="@style/TableRow"
+            android:background="@color/warning_background"
+            android:orientation="horizontal">
 
 
-        <TextView
-            android:id="@+id/row_number"
-            style="@style/TableCellTextView"
-            android:layout_width="@dimen/number_col_width"
-            tools:text="25" />
+            <TextView
+                android:id="@+id/row_number"
+                style="@style/TableCellTextView"
+                android:layout_width="@dimen/number_col_width"
+                tools:text="25" />
 
-        <TextView
-            android:id="@+id/username"
-            style="@style/TableCellTextView"
-            android:layout_width="@dimen/username_col_width"
-            tools:text="ABC***45" />
+            <TextView
+                android:id="@+id/username"
+                style="@style/TableCellTextView"
+                android:layout_width="@dimen/username_col_width"
+                tools:text="ABC***45" />
 
-        <TextView
-            android:id="@+id/full_name"
-            style="@style/TableCellTextView"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            tools:text="Some Strange Strange Strange Strange Strange Strange Name" />
+            <TextView
+                android:id="@+id/full_name"
+                style="@style/TableCellTextView"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                tools:text="Some Strange Strange Strange Strange Strange Strange Name" />
 
-        <TextView
-            android:id="@+id/seat"
-            style="@style/TableCellTextView"
-            android:layout_width="@dimen/seat_col_width"
-            android:text="@string/empty_cell" />
+            <TextView
+                android:id="@+id/seat"
+                style="@style/TableCellTextView"
+                android:layout_width="@dimen/seat_col_width"
+                android:text="@string/empty_cell" />
 
-        <TextView
-            android:id="@+id/checked_in"
-            style="@style/TableCellTextView"
-            android:layout_width="@dimen/checked_in_col_width"
-            tools:ignore="TextContrastCheck"
-            tools:text="✅" />
+            <TextView
+                android:id="@+id/checked_in"
+                style="@style/TableCellTextView"
+                android:layout_width="@dimen/checked_in_col_width"
+                tools:ignore="TextContrastCheck"
+                tools:text="✅" />
+        </LinearLayout>
+
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@android:color/darker_gray" />
     </LinearLayout>
+
 </layout>

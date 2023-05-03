@@ -6,14 +6,15 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import retrofit2.HttpException
+import sg.edu.ntu.scse.labattendancesystem.LabAttendanceSystemApplication
 import sg.edu.ntu.scse.labattendancesystem.domain.models.Result
-import sg.edu.ntu.scse.labattendancesystem.network.ApiServices
-import sg.edu.ntu.scse.labattendancesystem.network.SessionManager
-import sg.edu.ntu.scse.labattendancesystem.network.TokenManager
 import sg.edu.ntu.scse.labattendancesystem.network.UnauthenticatedError
 import sg.edu.ntu.scse.labattendancesystem.network.models.LabResp
 import java.net.HttpURLConnection
@@ -24,15 +25,24 @@ import java.net.HttpURLConnection
  * maintains an in-memory cache of login status and user credentials information.
  */
 
-class LoginRepository(private val dataStore: DataStore<Preferences>) : BaseRepository() {
-    private val tokenManager = TokenManager(dataStore)
-    private val sessionManager = SessionManager(tokenManager, ApiServices.token)
+class LoginRepository(
+    app: LabAttendanceSystemApplication,
+    externalScope: CoroutineScope,
+    defaultDispatcher: CoroutineDispatcher = Dispatchers.IO,
+) : BaseRepository(
+    app,
+    externalScope,
+    defaultDispatcher,
+) {
+    private val dataStore: DataStore<Preferences> = app.loginPreferenceDataStore
+    private val sessionManager = app.sessionManager
+    private val loginHistory = app.loginHistoryStore
 
-    val lastLoginUsername: Flow<String?> get() = readDataStore(LAST_LOGIN_USERNAME)
-    val lastLoginRoomNo: Flow<Int?> get() = readDataStore(LAST_LOGIN_ROOM)
+    val lastLoginUsername: Flow<String?> get() = loginHistory.lastLoginUsername
+    val lastLoginRoomNo: Flow<Int?> get() = loginHistory.lastLoginRoomNo
 
     fun labLogin(username: String, password: String, room: Int): Flow<Result<Unit>> {
-        return load {
+        return loadFromNet {
             Log.d(TAG, "labLogin: login")
             sessionManager.login(username, password)
 
@@ -52,14 +62,14 @@ class LoginRepository(private val dataStore: DataStore<Preferences>) : BaseRepos
             }
         }.onEach {
             if (it is Result.Success) {
-                writeDataStore(LAST_LOGIN_USERNAME, username)
-                writeDataStore(LAST_LOGIN_ROOM, room)
+                loginHistory.updateLastLoginUsername(username)
+                loginHistory.updateLastLoginRoomNo(room)
             }
         }
     }
 
     fun isAlreadyLogin(): Flow<Result<Boolean>> {
-        return load {
+        return loadFromNet {
             try {
                 sessionManager.getCurrentUser()
                 true
@@ -93,7 +103,5 @@ class LoginRepository(private val dataStore: DataStore<Preferences>) : BaseRepos
 
     companion object {
         private val TAG: String = LoginRepository::class.java.simpleName
-        private val LAST_LOGIN_USERNAME = stringPreferencesKey("last_login_username")
-        private val LAST_LOGIN_ROOM = intPreferencesKey("last_login_room_no")
     }
 }

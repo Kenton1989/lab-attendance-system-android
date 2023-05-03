@@ -24,9 +24,9 @@ fun CourseResp.toDatabaseModel() = DbCourse(
 fun GroupResp.toDatabaseModel() = DbGroup(
     id = id!!,
     name = name!!,
-    courseId = course!!.id!!,
+    courseId = course?.id ?: courseId!!,
     labId = lab!!.id!!,
-    roomNo = roomNo!!,
+    roomNo = roomNo,
 )
 
 fun GroupResp.toDbGroupTeachers(): List<DbGroupTeacher> {
@@ -50,14 +50,14 @@ fun GroupResp.toDbGroupTeachers(): List<DbGroupTeacher> {
 
 fun GroupStudentResp.toDatabaseModel() = DbGroupStudent(
     id = id!!,
-    studentId = student!!.id!!,
-    groupId = group!!.id!!,
+    studentId = student?.id ?: studentId!!,
+    groupId = group?.id ?: groupId!!,
     seat = seat,
 )
 
 fun SessionResp.toDatabaseModel() = DbSession(
     id = id!!,
-    groupId = group!!.id!!,
+    groupId = group?.id ?: groupId!!,
     startTime = startTime!!,
     endTime = endTime!!,
     isCompulsory = isCompulsory!!,
@@ -67,8 +67,8 @@ fun SessionResp.toDatabaseModel() = DbSession(
 
 fun AttendanceResp.toDbStudentAttendance() = DbStudentAttendance(
     id = id!!,
-    sessionId = session!!.id!!,
-    attenderId = attender!!.id!!,
+    sessionId = session?.id ?: sessionId!!,
+    attenderId = attender?.id ?: attenderId!!,
     checkInState = checkInState!!,
     checkInDatetime = checkInDatetime!!,
     lastModify = lastModify!!,
@@ -76,8 +76,8 @@ fun AttendanceResp.toDbStudentAttendance() = DbStudentAttendance(
 
 fun AttendanceResp.toDbTeacherAttendance() = DbStudentAttendance(
     id = id!!,
-    sessionId = session!!.id!!,
-    attenderId = attender!!.id!!,
+    sessionId = session?.id ?: sessionId!!,
+    attenderId = attender?.id ?: attenderId!!,
     checkInState = checkInState!!,
     checkInDatetime = checkInDatetime!!,
     lastModify = lastModify!!,

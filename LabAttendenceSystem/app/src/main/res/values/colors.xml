@@ -9,5 +9,6 @@
     <color name="white">#FFFFFFFF</color>
     <color name="light_gray">#FFD3D3D3</color>
     <color name="success_background">#1000FF00</color>
-    <color name="failure_background">#10FF0000</color>
+    <color name="warning_background">#10FF0000</color>
+    <color name="no_background">#00000000</color>
 </resources>

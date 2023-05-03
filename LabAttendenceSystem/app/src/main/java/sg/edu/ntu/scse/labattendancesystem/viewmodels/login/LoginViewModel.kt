@@ -4,6 +4,8 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.asLiveData
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import sg.edu.ntu.scse.labattendancesystem.LabAttendanceSystemApplication
 
@@ -15,7 +17,7 @@ import sg.edu.ntu.scse.labattendancesystem.viewmodels.BaseViewModel
 
 
 class LoginViewModel(app: LabAttendanceSystemApplication) : BaseViewModel() {
-    private val loginRepo = LoginRepository(app.loginPreferenceDataStore)
+    private val loginRepo = LoginRepository(app, viewModelScope)
 
     private val _loginFormState = MutableLiveData<LoginFormState>()
     val loginFormState: LiveData<LoginFormState> = _loginFormState
@@ -46,7 +48,7 @@ class LoginViewModel(app: LabAttendanceSystemApplication) : BaseViewModel() {
                 when (result) {
                     Result.Loading -> LoginResult(isLoading = true)
                     is Result.Success -> LoginResult(success = true)
-                    is Result.Failure -> formatLoginErrorResult (result.error)
+                    is Result.Failure -> formatLoginErrorResult(result.error)
                 }
             }
         }

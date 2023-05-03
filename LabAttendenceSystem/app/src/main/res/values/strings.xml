@@ -17,7 +17,7 @@
     <string name="invalid_lab_room_number_error">Invalid lab room number</string>
     <string name="unknown_login_error">Unknown error occurred during login. Please check your network and retry.</string>
     <string name="prompt_room_no">Room No.</string>
-    <string name="course_group">%1$s - %2$s</string>
+    <string name="group_course_tag">[%1$s] %2$s %3$s</string>
     <string name="time_range">%1$s~%2$s</string>
     <string name="session_detail_title">[%1$s] %2$s: %3$s</string>
     <string name="no_session_detail_title">No Session Selected</string>
@@ -31,4 +31,6 @@
     <string name="empty_cell">-</string>
     <string name="attended_mark">✅</string>
     <string name="absent_mark">❌</string>
+    <string name="no_active_sessions">No Active Sessions</string>
+    <string name="loading_active_sessions">Loading Active Sessions</string>
 </resources>
