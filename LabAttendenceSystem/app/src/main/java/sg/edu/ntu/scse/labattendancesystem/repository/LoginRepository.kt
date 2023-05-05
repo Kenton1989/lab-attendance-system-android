@@ -1,11 +1,8 @@
 package sg.edu.ntu.scse.labattendancesystem.repository
 
 import android.util.Log
-import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.intPreferencesKey
-import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -14,7 +11,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import retrofit2.HttpException
 import sg.edu.ntu.scse.labattendancesystem.LabAttendanceSystemApplication
-import sg.edu.ntu.scse.labattendancesystem.domain.models.Result
+import sg.edu.ntu.scse.labattendancesystem.domain.models.Outcome
+import sg.edu.ntu.scse.labattendancesystem.network.SessionManager
 import sg.edu.ntu.scse.labattendancesystem.network.UnauthenticatedError
 import sg.edu.ntu.scse.labattendancesystem.network.models.LabResp
 import java.net.HttpURLConnection
@@ -34,15 +32,16 @@ class LoginRepository(
     externalScope,
     defaultDispatcher,
 ) {
-    private val dataStore: DataStore<Preferences> = app.loginPreferenceDataStore
+    private val dataStore = app.loginPreferenceDataStore
     private val sessionManager = app.sessionManager
     private val loginHistory = app.loginHistoryStore
 
     val lastLoginUsername: Flow<String?> get() = loginHistory.lastLoginUsername
     val lastLoginRoomNo: Flow<Int?> get() = loginHistory.lastLoginRoomNo
 
-    fun labLogin(username: String, password: String, room: Int): Flow<Result<Unit>> {
-        return loadFromNet {
+    fun labLogin(username: String, password: String, room: Int): Flow<Outcome<Unit>> {
+        val timeout = SessionManager.DEFAULT_LOGIN_TIMEOUT + 10000L
+        return loadFromNet(timeout = timeout) {
             Log.d(TAG, "labLogin: login")
             sessionManager.login(username, password)
 
@@ -61,14 +60,15 @@ class LoginRepository(
                 throw InvalidLabRoomNumber(room, lab.roomCount!!)
             }
         }.onEach {
-            if (it is Result.Success) {
+            if (it is Outcome.Success) {
                 loginHistory.updateLastLoginUsername(username)
                 loginHistory.updateLastLoginRoomNo(room)
+                loginHistory.updateLastLoginPassword(password)
             }
         }
     }
 
-    fun isAlreadyLogin(): Flow<Result<Boolean>> {
+    fun isAlreadyLogin(): Flow<Outcome<Boolean>> {
         return loadFromNet {
             try {
                 sessionManager.getCurrentUser()

@@ -19,7 +19,8 @@ class CheckInTable(
     private val tableBodyRecyclerView: RecyclerView,
     private val attendances: LiveData<List<Attendance>>,
     private val hideSeat: Boolean = false,
-    private val onUndoCheckIn: (a: Attendance) -> Any = { TODO("Undo not Allowed") },
+    private val highlightCompulsory: Boolean = true,
+    private val onUndoCheckIn: ((a: Attendance) -> Any)? = null,
     private val onCheckIn: (a: Attendance) -> Any,
 ) {
     companion object {
@@ -32,7 +33,7 @@ class CheckInTable(
 
     private fun setUpRecyclerView() {
         val adapter = CheckInTableItemAdapter(
-            parent.requireContext(), hideSeat, ::onRowClicked
+            parent.requireContext(), hideSeat, highlightCompulsory, ::onRowClicked
         )
 
         attendances.observe(parent.viewLifecycleOwner) {
@@ -61,8 +62,7 @@ class CheckInTable(
         val builder = AlertDialog.Builder(parent.requireContext())
         val username = attendance.attender.username
         val name = attendance.attender.displayName
-        builder.setMessage("Confirm check-in for:\n$name\n(username: $username)?")
-            .setTitle("Confirm?")
+        builder.setMessage("Check-in for:\n$name\n(username: $username)?").setTitle("Confirm?")
             .setPositiveButton("YES") { _, _ -> onCheckIn(attendance) }
             .setNegativeButton("NO") { _, _ -> }
         val dialog = builder.create()
@@ -72,12 +72,14 @@ class CheckInTable(
 
     private fun handleUndoCheckIn(attendance: Attendance) {
         Log.d(TAG, "undo checking in")
+        if (onUndoCheckIn == null) return
+
         val builder = AlertDialog.Builder(parent.requireContext())
         val username = attendance.attender.username
         val name = attendance.attender.displayName
-        builder.setMessage("Confirm undo check-in for:\n$name\n(username: $username)?")
-            .setTitle("Confirm?")
-            .setPositiveButton("YES") { _, _ -> onUndoCheckIn(attendance) }
+        builder.setTitle("Confirm?")
+            .setMessage("Undo check-in for:\n$name\n(username: $username)?")
+            .setPositiveButton("YES") { _, _ -> onUndoCheckIn.invoke(attendance) }
             .setNegativeButton("NO") { _, _ -> }
         val dialog = builder.create()
         dialog.show()

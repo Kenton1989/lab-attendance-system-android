@@ -5,18 +5,17 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import sg.edu.ntu.scse.labattendancesystem.LabAttendanceSystemApplication
 
 import sg.edu.ntu.scse.labattendancesystem.R
-import sg.edu.ntu.scse.labattendancesystem.domain.models.Result
+import sg.edu.ntu.scse.labattendancesystem.domain.models.Outcome
 import sg.edu.ntu.scse.labattendancesystem.network.UnauthenticatedError
 import sg.edu.ntu.scse.labattendancesystem.repository.*
 import sg.edu.ntu.scse.labattendancesystem.viewmodels.BaseViewModel
 
 
-class LoginViewModel(app: LabAttendanceSystemApplication) : BaseViewModel() {
+class LoginViewModel(private val app: LabAttendanceSystemApplication) : BaseViewModel() {
     private val loginRepo = LoginRepository(app, viewModelScope)
 
     private val _loginFormState = MutableLiveData<LoginFormState>()
@@ -33,9 +32,9 @@ class LoginViewModel(app: LabAttendanceSystemApplication) : BaseViewModel() {
     val lastLoginRoomNumber: LiveData<Int?> = loginRepo.lastLoginRoomNo.asLiveData()
     val isAlreadyLogin: LiveData<Boolean?> = loginRepo.isAlreadyLogin().map { alreadyLogin ->
         when (alreadyLogin) {
-            Result.Loading -> null
-            is Result.Success -> alreadyLogin.data
-            is Result.Failure -> false
+            Outcome.Loading -> null
+            is Outcome.Success -> alreadyLogin.data
+            is Outcome.Failure -> false
         }
     }.asLiveData()
 
@@ -45,11 +44,22 @@ class LoginViewModel(app: LabAttendanceSystemApplication) : BaseViewModel() {
         _loginResult.load {
             loginRepo.labLogin(username, password, roomNo).map { result ->
                 Log.i(TAG, result.toString())
-                when (result) {
-                    Result.Loading -> LoginResult(isLoading = true)
-                    is Result.Success -> LoginResult(success = true)
-                    is Result.Failure -> formatLoginErrorResult(result.error)
+                val onlineRes = when (result) {
+                    Outcome.Loading -> LoginResult(isLoading = true)
+                    is Outcome.Success -> LoginResult(success = true)
+                    is Outcome.Failure -> formatLoginErrorResult(result.error)
                 }
+
+                var res = onlineRes
+                if (result is Outcome.Failure &&
+                    result.error is OperationTimeoutError &&
+                    username == lastLoginUsername.value &&
+                    app.loginHistoryStore.verifyLastLoginPassword(password)
+                ) {
+                    res = LoginResult(success = true)
+                }
+
+                res
             }
         }
     }

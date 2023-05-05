@@ -4,8 +4,8 @@ import android.content.Context
 import android.util.Log
 import androidx.work.*
 import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.withTimeout
 import sg.edu.ntu.scse.labattendancesystem.database.MainDao
 import sg.edu.ntu.scse.labattendancesystem.database.models.DbGroupStudent
@@ -24,6 +24,7 @@ class DataSyncer(
     private val workManager: WorkManager,
     initLabId: Int? = null,
     private val netRequestTimeoutMillis: Long = 10000,
+    // TODO: change back to normal value
     private val cacheExpireAfterTimeRange: Duration = Duration.ofDays(7),
     private val cacheInAdvanceTimeRange: Duration = Duration.ofDays(7),
     private val syncInterval: Duration = Duration.ofMinutes(15),
@@ -43,10 +44,15 @@ class DataSyncer(
     }
 
     private val _lastNetworkRequestSucceeded = MutableStateFlow(onlineInitVal)
-    val lastNetworkRequestSucceeded: StateFlow<Boolean> get() = _lastNetworkRequestSucceeded;
+    val lastNetworkRequestSucceeded: Flow<Boolean>
+        get() = _lastNetworkRequestSucceeded.onEach {
+            Log.d(TAG, "new DataSyncer.lastNetworkRequestSucceeded: $it")
+        }
 
     private val _syncing = MutableStateFlow(false)
-    val syncing: StateFlow<Boolean> get() = _syncing;
+    val syncing: Flow<Boolean> get() = _syncing.onEach {
+        Log.d(TAG, "new DataSyncer.syncing: $it")
+    }
 
     var labId: Int? = null
         set(value) {
@@ -81,6 +87,7 @@ class DataSyncer(
     suspend fun syncAll() {
         withSyncFlag {
             saveAllSessionsOfCurrentLab()
+            Log.d(TAG, "all sync job done")
         }
     }
 
@@ -91,8 +98,13 @@ class DataSyncer(
 
         val work = OneTimeWorkRequestBuilder<SyncWorker>().setInputData(data).build()
 
-        _syncing.value = true
-        workManager.beginUniqueWork(SYNC_ONCE_WORK_NAME, ExistingWorkPolicy.KEEP, work).enqueue()
+        if (_syncing.compareAndSet(false, true)) {
+            Log.d(TAG, "syncAllOnce: running")
+            workManager.beginUniqueWork(SYNC_ONCE_WORK_NAME, ExistingWorkPolicy.KEEP, work)
+                .enqueue()
+        } else {
+            Log.d(TAG, "syncAllOnce: other syncing job is running")
+        }
     }
 
     fun startPeriodicSyncAll() {
@@ -144,11 +156,14 @@ class DataSyncer(
     }
 
     private suspend fun <T> withSyncFlag(f: suspend () -> T): T {
-        _syncing.value = true;
+        _syncing.value = true
+        Log.d(TAG, "set sync flag to true");
+
         return try {
             f();
         } finally {
-            _syncing.value = false;
+            Log.d(TAG, "finally set sync flag to false")
+            _syncing.value = false
         }
     }
 
@@ -240,14 +255,14 @@ class DataSyncer(
     }
 
     private suspend fun fetchGroupTeachers(groupId: Int): List<UserResp>? {
-        Log.d(TAG, "fetchGroupTeachers")
+//        Log.d(TAG, "fetchGroupTeachers")
         return safeNetReq {
             api.getGroupTeachers(groupId = groupId).teachers
         }
     }
 
     private suspend fun fetchGroupStudents(groupId: Int): List<GroupStudentResp>? {
-        Log.d(TAG, "fetchGroupStudents")
+//        Log.d(TAG, "fetchGroupStudents")
         return safeNetReq {
             api.getStudentsOfGroup(groupId = groupId).results
         }

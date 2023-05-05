@@ -18,6 +18,7 @@ import sg.edu.ntu.scse.labattendancesystem.domain.models.Attendance
 class CheckInTableItemAdapter(
     private val context: Context,
     private val hideSeat: Boolean = false,
+    private val highlightCompulsory: Boolean = true,
     private val onRowClicked: (a: Attendance) -> Unit = { }
 ) : RecyclerView.Adapter<CheckInTableItemAdapter.ItemViewHolder>() {
     class ItemViewHolder(val binding: ItemCheckInTableBinding) :
@@ -25,7 +26,8 @@ class CheckInTableItemAdapter(
 
 
     var attendances: List<Attendance> = listOf()
-        @SuppressLint("NotifyDataSetChanged") set(value) {
+        @SuppressLint("NotifyDataSetChanged")
+        set(value) {
             val sortedList = value.sortedBy { a -> a.attender.username }
             field = sortedList
             notifyDataSetChanged()
@@ -52,33 +54,34 @@ class CheckInTableItemAdapter(
                 seat.visibility = View.GONE
             } else {
                 seat.visibility = View.VISIBLE
-                seat.text = attendance.seat ?: getString(R.string.empty_cell)
+                seat.text = attendance.seat ?: res.getString(R.string.empty_cell)
             }
             tableRow.setOnClickListener {
                 onItemClicked(holder, attendance)
             }
-            
-            renderCheckInState(holder, attendance)
-        }
-    }
 
-    private fun renderCheckInState(holder: ItemViewHolder, attendance: Attendance) {
-        holder.binding.apply {
-            if (attendance.checkInState.isAbsent()) {
-                checkedIn.text = getString(R.string.absent_mark)
-                if (attendance.session!!.isCompulsory)
-                    tableRow.setBackgroundColor(getColor(R.color.warning_background))
-                else
-                    tableRow.setBackgroundColor(getColor(R.color.no_background))
-            } else {
-                checkedIn.text = getString(R.string.attended_mark)
-                tableRow.setBackgroundColor(getColor(R.color.success_background))
-            }
+            renderCheckInState(holder, attendance)
         }
     }
 
     override fun getItemCount(): Int {
         return attendances.size
+    }
+
+
+    private fun renderCheckInState(holder: ItemViewHolder, attendance: Attendance) {
+        holder.binding.apply {
+            if (attendance.checkInState.isAbsent()) {
+                checkedIn.text = res.getString(R.string.absent_mark)
+                if (highlightCompulsory && attendance.session!!.isCompulsory)
+                    tableRow.setBackgroundColor(getColor(R.color.warning_background))
+                else
+                    tableRow.setBackgroundColor(getColor(R.color.no_background))
+            } else {
+                checkedIn.text = res.getString(R.string.attended_mark)
+                tableRow.setBackgroundColor(getColor(R.color.success_background))
+            }
+        }
     }
 
     private fun onItemClicked(holder: ItemViewHolder, attendance: Attendance) {
@@ -93,8 +96,7 @@ class CheckInTableItemAdapter(
         return prefix + middle + suffix
     }
 
-    private fun getString(@StringRes id: Int, vararg v: Any) =
-        context.resources.getString(id, *v)
+    private val res get() = context.resources
 
     private fun getColor(@ColorRes id: Int) = ContextCompat.getColor(context, id)
 }

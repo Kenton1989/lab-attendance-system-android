@@ -18,7 +18,8 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:gravity="center"
-            android:text="@string/no_session_detail_title" />
+            />
+<!--        android:text="@string/no_session_detail_title" />-->
 
         <androidx.core.widget.NestedScrollView
             android:id="@+id/main_scroll_view"

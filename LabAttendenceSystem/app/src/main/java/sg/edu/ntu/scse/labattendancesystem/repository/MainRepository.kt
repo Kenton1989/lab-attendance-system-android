@@ -3,12 +3,12 @@ package sg.edu.ntu.scse.labattendancesystem.repository
 import android.util.Log
 import androidx.work.WorkManager
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.*
 import sg.edu.ntu.scse.labattendancesystem.LabAttendanceSystemApplication
 import sg.edu.ntu.scse.labattendancesystem.domain.models.*
+import sg.edu.ntu.scse.labattendancesystem.network.UnauthenticatedError
 import java.time.ZonedDateTime
+import kotlin.math.log
 
 class MainRepository(
     app: LabAttendanceSystemApplication,
@@ -21,9 +21,6 @@ class MainRepository(
 ) {
     companion object {
         val TAG: String = MainRepository::class.java.simpleName
-        fun getTokenManager() {
-
-        }
     }
 
     private val workManager = WorkManager.getInstance(app)
@@ -31,10 +28,10 @@ class MainRepository(
     private val sessionManager get() = app.sessionManager
     private val mainDb = app.database.mainDao()
     private val loginHistory get() = app.loginHistoryStore
-    private val syncer = DataSyncer(
+    private var syncer: DataSyncer = DataSyncer(
         app.apiServices.main,
         mainDb,
-        workManager,
+        workManager
     )
     private lateinit var labCache: Lab
     private var roomCache: Int? = null
@@ -60,8 +57,14 @@ class MainRepository(
 
         labCache = sessionManager.getCurrentLab().toDomainModel()
         roomCache = loginHistory.lastLoginRoomNo.first()
-        Log.d(TAG, "lab cache init done")
+        Log.d(TAG, "lab cache init done $labCache")
 
+        syncer = DataSyncer(
+            app.apiServices.main,
+            mainDb,
+            workManager,
+            initLabId = labCache.id
+        )
         syncer.labId = labCache.id
         syncer.syncAllOnce()
         syncer.startPeriodicSyncAll()
@@ -72,33 +75,56 @@ class MainRepository(
         syncer.syncAllOnce()
     }
 
-    fun getBriefSession(sessionId: Int): Flow<Session> {
-        return mainDb.getBriefSession(sessionId).map {
-            it.toDomainModel()
+    fun verifyLogoutCredential(password: String): Flow<Outcome<Unit>> {
+        return loadFromNet {
+            val username = loginHistory.lastLoginUsername.first()!!
+            if (!sessionManager.verifyCredential(username, password)) {
+                throw UnauthenticatedError()
+            }
         }
+    }
+
+    fun logout(): Flow<Outcome<Unit>> {
+        return loadFromNet {
+            sessionManager.logout()
+        }
+    }
+
+    fun getBriefSession(sessionId: Int): Flow<Session> {
+        return mainDb.getBriefSession(sessionId)
+            .onEach { Log.d(TAG, "getBriefSession(id=$sessionId): got $it") }
+            .filterNotNull().map {
+                it.toDomainModel()
+            }
     }
 
     fun getDetailSession(sessionId: Int): Flow<Session> {
-        return mainDb.getDetailSession(sessionId).map {
-            it.toDomainModel()
-        }
+        return mainDb.getDetailSession(sessionId)
+            .onEach { Log.d(TAG, "getDetailSession(id=$sessionId): got $it") }
+            .filterNotNull().map {
+                it.toDomainModel()
+            }
     }
 
     fun getDetailGroup(groupId: Int): Flow<Group> {
-        return mainDb.getDetailGroup(groupId).map {
-            it.toDomainModel()
-        }
+        return mainDb.getDetailGroup(groupId)
+            .onEach { Log.d(TAG, "getDetailGroup(id=$groupId): got $it") }
+            .filterNotNull().map {
+                it.toDomainModel()
+            }
     }
 
     fun getDbStudentAttendances(sessionId: Int): Flow<List<Attendance>> {
-        return mainDb.getStudentAttendancesOfSession(sessionId = sessionId).map { l ->
-            l.map { it.toDomainModel() }
-        }
+        return mainDb.getStudentAttendancesOfSession(sessionId = sessionId).filterNotNull()
+            .map { l ->
+                l.map { it.toDomainModel() }
+            }
     }
 
     fun getDbTeacherAttendances(sessionId: Int): Flow<List<Attendance>> {
-        return mainDb.getTeacherAttendancesOfSession(sessionId = sessionId).map { l ->
-            l.map { it.toDomainModel() }
-        }
+        return mainDb.getTeacherAttendancesOfSession(sessionId = sessionId).filterNotNull()
+            .map { l ->
+                l.map { it.toDomainModel() }
+            }
     }
 }

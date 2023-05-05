@@ -62,7 +62,6 @@ class SessionDetailFragment : Fragment() {
             this,
             binding.studentCheckInTableContent,
             viewModel.selectedStudentAttendances,
-            false
         ) {
             handleStudentAttendanceClicked(it)
         }
@@ -71,7 +70,8 @@ class SessionDetailFragment : Fragment() {
             this,
             binding.teacherCheckInTableContent,
             viewModel.selectedTeacherAttendances,
-            true,
+            hideSeat = true,
+            highlightCompulsory = false,
         ) {
             handleTeacherAttendanceClicked(it)
         }

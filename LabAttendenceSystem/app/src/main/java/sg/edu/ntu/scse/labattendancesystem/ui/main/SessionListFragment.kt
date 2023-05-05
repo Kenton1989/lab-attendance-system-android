@@ -50,7 +50,6 @@ class SessionListFragment : Fragment() {
 
         sessionItemAdapter = SessionListItemAdapter(
             requireContext(),
-            viewModel,
             ::onSessionSelected,
         )
         binding.sessionListRecycler.adapter = sessionItemAdapter
@@ -59,7 +58,8 @@ class SessionListFragment : Fragment() {
         viewModel.activeSessionList.observe(viewLifecycleOwner) {
             Log.d(TAG, if (it != null) "loaded: ${it.size}" else "loading session list")
 
-            sessionItemAdapter.sessions = it ?: listOf()
+            val session = it ?: listOf()
+            sessionItemAdapter.updateSessions(session, viewModel.selectedSession.value)
 
             binding.loadingActiveSessionHint.visibility = View.GONE
             if (sessionItemAdapter.sessions.isEmpty()) {
@@ -70,14 +70,19 @@ class SessionListFragment : Fragment() {
                 binding.sessionListRecycler.visibility = View.VISIBLE
             }
         }
+
+        viewModel.selectedSession.observe(viewLifecycleOwner) {
+            sessionItemAdapter.updateSelectedSession(it)
+        }
     }
 
 
     private fun onSessionSelected(session: Session) {
-        val msg = with(session) {
-            "selected $id ${group.course.code} ${group.name}"
-        }
-        Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
+//        val msg = with(session) {
+//            "selected $id ${group.course.code} ${group.name}"
+//        }
+//        Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
+        viewModel.updateSelectedSession(session.id)
     }
 
     override fun onDestroyView() {

@@ -33,4 +33,7 @@
     <string name="absent_mark">❌</string>
     <string name="no_active_sessions">No Active Sessions</string>
     <string name="loading_active_sessions">Loading Active Sessions</string>
+    <string name="action_logout">logout</string>
+    <string name="action_sync">sync</string>
+    <string name="logout_warning">To logout the system, please enter the password first.\n(WARNING: the app will be closed after logout.)</string>
 </resources>
