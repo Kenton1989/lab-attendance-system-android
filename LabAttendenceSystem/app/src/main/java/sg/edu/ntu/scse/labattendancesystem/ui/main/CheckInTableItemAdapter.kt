@@ -6,7 +6,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.ColorRes
-import androidx.annotation.StringRes
 import androidx.core.content.ContextCompat
 import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.RecyclerView
@@ -73,7 +72,7 @@ class CheckInTableItemAdapter(
         holder.binding.apply {
             if (attendance.checkInState.isAbsent()) {
                 checkedIn.text = res.getString(R.string.absent_mark)
-                if (highlightCompulsory && attendance.session!!.isCompulsory)
+                if (highlightCompulsory && attendance.session?.isCompulsory == true)
                     tableRow.setBackgroundColor(getColor(R.color.warning_background))
                 else
                     tableRow.setBackgroundColor(getColor(R.color.no_background))

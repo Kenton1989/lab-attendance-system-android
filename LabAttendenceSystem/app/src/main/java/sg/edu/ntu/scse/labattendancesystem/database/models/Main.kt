@@ -195,7 +195,6 @@ data class DbMakeUpSession(
     @ColumnInfo(name = "ms_make_up_session_id") val makeUpSessionId: Int,
 )
 
-
 @Entity(
     tableName = "student_attendance_tb",
     foreignKeys = [
@@ -212,19 +211,20 @@ data class DbMakeUpSession(
             onDelete = ForeignKey.CASCADE,
         ),
     ],
+    primaryKeys = ["sa_session_id", "sa_attender_id"],
     indices = [
-        Index("sa_session_id", "sa_attender_id", unique = true),
+//        Index("sa_session_id", "sa_attender_id", unique = true),
         Index("sa_attender_id"), Index("sa_last_modify"),
     ],
 )
 data class DbStudentAttendance(
-    @PrimaryKey(autoGenerate = true)
-    @ColumnInfo(name = "sa_local_id") val localId: Int = 0,
+//    @PrimaryKey(autoGenerate = true)
+//    @ColumnInfo(name = "sa_local_id") val localId: Int = 0,
     @ColumnInfo(name = "sa_id") val id: Int?,
     @ColumnInfo(name = "sa_session_id") val sessionId: Int,
     @ColumnInfo(name = "sa_attender_id") val attenderId: Int,
     @ColumnInfo(name = "sa_check_in_state") val checkInState: String,
-    @ColumnInfo(name = "sa_check_in_datetime") val checkInDatetime: ZonedDateTime,
+    @ColumnInfo(name = "sa_check_in_datetime") val checkInDatetime: ZonedDateTime?,
     @ColumnInfo(name = "sa_last_modify") val lastModify: ZonedDateTime,
 )
 
@@ -245,18 +245,19 @@ data class DbStudentAttendance(
             onDelete = ForeignKey.CASCADE,
         ),
     ],
+    primaryKeys = ["ta_session_id", "ta_attender_id"],
     indices = [
-        Index("ta_session_id", "ta_attender_id", unique = true),
+//        Index("ta_session_id", "ta_attender_id", unique = true),
         Index("ta_attender_id"), Index("ta_last_modify"),
     ],
 )
 data class DbTeacherAttendance(
-    @PrimaryKey(autoGenerate = true)
-    @ColumnInfo(name = "ta_local_id") val localId: Int = 0,
+//    @PrimaryKey(autoGenerate = true)
+//    @ColumnInfo(name = "ta_local_id") val localId: Int = 0,
     @ColumnInfo(name = "ta_id") val id: Int?,
     @ColumnInfo(name = "ta_session_id") val sessionId: Int,
     @ColumnInfo(name = "ta_attender_id") val attenderId: Int,
     @ColumnInfo(name = "ta_check_in_state") val checkInState: String,
-    @ColumnInfo(name = "ta_check_in_datetime") val checkInDatetime: ZonedDateTime,
+    @ColumnInfo(name = "ta_check_in_datetime") val checkInDatetime: ZonedDateTime?,
     @ColumnInfo(name = "ta_last_modify") val lastModify: ZonedDateTime,
 )

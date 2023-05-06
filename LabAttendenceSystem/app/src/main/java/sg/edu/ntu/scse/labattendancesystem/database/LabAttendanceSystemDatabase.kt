@@ -8,7 +8,7 @@ import androidx.room.TypeConverters
 import sg.edu.ntu.scse.labattendancesystem.database.models.*
 
 @Database(
-    version = 3,
+    version = 4,
     exportSchema = false,
     entities = [
         DbUser::class, DbLab::class, DbCourse::class, DbGroup::class, DbSession::class,

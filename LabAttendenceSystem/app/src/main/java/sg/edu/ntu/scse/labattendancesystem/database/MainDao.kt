@@ -74,6 +74,9 @@ interface MainDao {
         startTimeBefore: ZonedDateTime = ZonedDateTime.now().minusMinutes(15),
     ): Flow<List<SessionWithCourseGroup>>
 
+    @Query("SELECT EXISTS(SELECT * FROM session_tb WHERE s_id = :id);")
+    fun hasSession(id: Int): Flow<Boolean>
+
     @Transaction
     @Query("SELECT * FROM session_tb WHERE s_id = :id;")
     fun getBriefSession(id: Int): Flow<SessionWithCourseGroup?>
@@ -84,6 +87,9 @@ interface MainDao {
 
     @Upsert
     fun insertOrUpdateSessions(models: Collection<DbSession>)
+
+    @Query("DELETE FROM session_tb WHERE s_start_datetime < :minStartTimeInCache")
+    fun deleteExpiredSession(minStartTimeInCache: ZonedDateTime)
 
     @Transaction
     @Query("SELECT * FROM make_up_session_tb WHERE ms_make_up_session_id = :makeUpSessionId;")
@@ -100,8 +106,36 @@ interface MainDao {
     @Query("SELECT * FROM student_attendance_tb WHERE sa_session_id = :sessionId;")
     fun getStudentAttendancesOfSession(sessionId: Int): Flow<List<StudentAttendanceWithAttender>>
 
+
+    @Transaction
+    @Query(
+        "SELECT * FROM student_attendance_tb WHERE " +
+                "(:id IS NULL OR sa_id = :id) AND" +
+                "(:attenderId IS NULL OR sa_attender_id = :attenderId) AND" +
+                "(:sessionId IS NULL OR sa_session_id = :sessionId) AND" +
+                "(:lastModifyAfter IS NULL OR sa_last_modify > :lastModifyAfter) AND" +
+                "(:lastModifyBefore IS NULL OR sa_last_modify < :lastModifyBefore) "
+    )
+    fun getRawStudentAttendances(
+        id: Int? = null,
+        attenderId: Int? = null,
+        sessionId: Int? = null,
+        lastModifyAfter: ZonedDateTime? = null,
+        lastModifyBefore: ZonedDateTime? = null,
+    ): Flow<List<DbStudentAttendance>>
+
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertStudentAttendances(models: Collection<DbStudentAttendance>): List<Long>
+
+    @Update
+    suspend fun updateStudentAttendances(models: Collection<DbStudentAttendance>): Int
+
     @Upsert
-    fun insertOrUpdateStudentAttendances(models: Collection<DbStudentAttendance>)
+    suspend fun insertOrUpdateStudentAttendances(models: Collection<DbStudentAttendance>)
+
+    @Delete
+    suspend fun deleteStudentAttendances(models: Collection<DbStudentAttendance>): Int
 
     @Transaction
     @Query("SELECT * FROM teacher_attendance_tb WHERE ta_id = :id;")
@@ -111,6 +145,32 @@ interface MainDao {
     @Query("SELECT * FROM teacher_attendance_tb WHERE ta_session_id = :sessionId;")
     fun getTeacherAttendancesOfSession(sessionId: Int): Flow<List<TeacherAttendanceWithAttender>>
 
+    @Transaction
+    @Query(
+        "SELECT * FROM teacher_attendance_tb WHERE " +
+                "(:id IS NULL OR ta_id = :id) AND" +
+                "(:attenderId IS NULL OR ta_attender_id = :attenderId) AND" +
+                "(:sessionId IS NULL OR ta_session_id = :sessionId) AND" +
+                "(:lastModifyAfter IS NULL OR ta_last_modify > :lastModifyAfter) AND" +
+                "(:lastModifyBefore IS NULL OR ta_last_modify < :lastModifyBefore) "
+    )
+    fun getRawTeacherAttendances(
+        id: Int? = null,
+        attenderId: Int? = null,
+        sessionId: Int? = null,
+        lastModifyAfter: ZonedDateTime? = null,
+        lastModifyBefore: ZonedDateTime? = null,
+    ): Flow<List<DbTeacherAttendance>>
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertTeacherAttendances(models: Collection<DbTeacherAttendance>): List<Long>
+
+    @Update
+    suspend fun updateTeacherAttendances(models: Collection<DbTeacherAttendance>): Int
+
     @Upsert
-    fun insertOrUpdateTeacherAttendances(models: Collection<DbTeacherAttendance>)
+    suspend fun insertOrUpdateTeacherAttendances(models: Collection<DbTeacherAttendance>)
+
+    @Delete
+    suspend fun deleteTeacherAttendances(models: Collection<DbTeacherAttendance>): Int
 }

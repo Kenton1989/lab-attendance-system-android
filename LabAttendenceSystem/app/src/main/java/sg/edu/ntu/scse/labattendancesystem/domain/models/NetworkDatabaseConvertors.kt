@@ -1,8 +1,8 @@
 package sg.edu.ntu.scse.labattendancesystem.domain.models
 
-import androidx.room.PrimaryKey
 import sg.edu.ntu.scse.labattendancesystem.network.models.*
 import sg.edu.ntu.scse.labattendancesystem.database.models.*
+import java.time.Duration
 
 fun UserResp.toDatabaseModel() = DbUser(
     id = id!!,
@@ -29,25 +29,6 @@ fun GroupResp.toDatabaseModel() = DbGroup(
     roomNo = roomNo,
 )
 
-fun GroupResp.toDbGroupTeachers(): List<DbGroupTeacher> {
-    if (teachers != null)
-        return teachers.map {
-            DbGroupTeacher(
-                groupId = this.id!!,
-                teacherId = it.id!!,
-            )
-        }
-    else if (teacherIds != null)
-        return teacherIds.map {
-            DbGroupTeacher(
-                groupId = this.id!!,
-                teacherId = it,
-            )
-        }
-    else
-        throw NullPointerException("expecting not-null teachers or teacherIds")
-}
-
 fun GroupStudentResp.toDatabaseModel() = DbGroupStudent(
     id = id!!,
     studentId = student?.id ?: studentId!!,
@@ -65,20 +46,54 @@ fun SessionResp.toDatabaseModel() = DbSession(
     checkInDeadlineMinutes = checkInDeadlineMinutes!!,
 )
 
+val LAST_MODIFY_SHIFT: Duration = Duration.ofSeconds(1)
+
 fun AttendanceResp.toDbStudentAttendance() = DbStudentAttendance(
     id = id!!,
     sessionId = session?.id ?: sessionId!!,
     attenderId = attender?.id ?: attenderId!!,
     checkInState = checkInState!!,
-    checkInDatetime = checkInDatetime!!,
+    checkInDatetime = checkInDatetime,
     lastModify = lastModify!!,
 )
 
-fun AttendanceResp.toDbTeacherAttendance() = DbStudentAttendance(
+fun DbStudentAttendance.toUpdateAttendanceReq() = UpdateAttendanceReq(
+    sessionId = sessionId,
+    attenderId = attenderId,
+    checkInState = checkInState,
+    checkInDatetime = checkInDatetime,
+    lastModify = lastModify,
+)
+
+fun DbStudentAttendance.toNewAttendanceReq() = NewAttendanceReq(
+    sessionId = sessionId,
+    attenderId = attenderId,
+    checkInState = checkInState,
+    checkInDatetime = checkInDatetime,
+    lastModify = lastModify,
+)
+
+fun AttendanceResp.toDbTeacherAttendance() = DbTeacherAttendance(
     id = id!!,
     sessionId = session?.id ?: sessionId!!,
     attenderId = attender?.id ?: attenderId!!,
     checkInState = checkInState!!,
-    checkInDatetime = checkInDatetime!!,
+    checkInDatetime = checkInDatetime,
     lastModify = lastModify!!,
+)
+
+fun DbTeacherAttendance.toUpdateAttendanceReq() = UpdateAttendanceReq(
+    sessionId = sessionId,
+    attenderId = attenderId,
+    checkInState = checkInState,
+    checkInDatetime = checkInDatetime,
+    lastModify = lastModify,
+)
+
+fun DbTeacherAttendance.toNewAttendanceReq() = NewAttendanceReq(
+    sessionId = sessionId,
+    attenderId = attenderId,
+    checkInState = checkInState,
+    checkInDatetime = checkInDatetime,
+    lastModify = lastModify,
 )

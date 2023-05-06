@@ -1,6 +1,5 @@
 package sg.edu.ntu.scse.labattendancesystem.network.models
 
-import androidx.room.PrimaryKey
 import com.squareup.moshi.Json
 import java.time.ZonedDateTime
 
@@ -69,9 +68,9 @@ data class MakeUpSessionResp(
 
 data class AttendanceResp(
     val id: Int?,
-    val session: SessionResp?,
+    val session: SessionResp? = null,
     @Json(name = "session_id") val sessionId: Int?,
-    val attender: UserResp?,
+    val attender: UserResp? = null,
     @Json(name = "attender_id") val attenderId: Int?,
     @Json(name = "check_in_state") val checkInState: String?,
     @Json(name = "check_in_datetime") val checkInDatetime: ZonedDateTime?,
@@ -81,6 +80,14 @@ data class AttendanceResp(
 data class NewAttendanceReq(
     @Json(name = "session_id") val sessionId: Int,
     @Json(name = "attender_id") val attenderId: Int,
+    @Json(name = "check_in_state") val checkInState: String?,
+    @Json(name = "check_in_datetime") val checkInDatetime: ZonedDateTime?,
+    @Json(name = "last_modify") val lastModify: ZonedDateTime?,
+)
+
+data class UpdateAttendanceReq(
+    @Json(name = "session_id") val sessionId: Int?,
+    @Json(name = "attender_id") val attenderId: Int?,
     @Json(name = "check_in_state") val checkInState: String?,
     @Json(name = "check_in_datetime") val checkInDatetime: ZonedDateTime?,
     @Json(name = "last_modify") val lastModify: ZonedDateTime?,

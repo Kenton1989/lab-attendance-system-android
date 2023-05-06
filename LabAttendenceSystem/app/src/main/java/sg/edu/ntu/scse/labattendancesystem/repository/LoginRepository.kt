@@ -1,13 +1,10 @@
 package sg.edu.ntu.scse.labattendancesystem.repository
 
 import android.util.Log
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.edit
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import retrofit2.HttpException
 import sg.edu.ntu.scse.labattendancesystem.LabAttendanceSystemApplication
@@ -32,7 +29,6 @@ class LoginRepository(
     externalScope,
     defaultDispatcher,
 ) {
-    private val dataStore = app.loginPreferenceDataStore
     private val sessionManager = app.sessionManager
     private val loginHistory = app.loginHistoryStore
 
@@ -41,7 +37,7 @@ class LoginRepository(
 
     fun labLogin(username: String, password: String, room: Int): Flow<Outcome<Unit>> {
         val timeout = SessionManager.DEFAULT_LOGIN_TIMEOUT + 10000L
-        return loadFromNet(timeout = timeout) {
+        return asyncLoad(timeout = timeout) {
             Log.d(TAG, "labLogin: login")
             sessionManager.login(username, password)
 
@@ -69,7 +65,7 @@ class LoginRepository(
     }
 
     fun isAlreadyLogin(): Flow<Outcome<Boolean>> {
-        return loadFromNet {
+        return asyncLoad {
             try {
                 sessionManager.getCurrentUser()
                 true
@@ -93,12 +89,6 @@ class LoginRepository(
             // ignore unauthenticated error since we just want to ensure user has logout
             return
         }
-    }
-
-    private fun <T> readDataStore(key: Preferences.Key<T>) = dataStore.data.map { it[key] }
-
-    private suspend fun <T> writeDataStore(key: Preferences.Key<T>, value: T) {
-        dataStore.edit { it[key] = value }
     }
 
     companion object {

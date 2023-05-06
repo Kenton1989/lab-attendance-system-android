@@ -39,7 +39,7 @@ abstract class BaseRepository(
     /**
      * Helper function for tracing the loading status of suspended function
      */
-    fun <T> loadFromNet(
+    fun <T> asyncLoad(
         timeout: Long = REQUEST_TIMEOUT_MS,
         call: suspend () -> T
     ): Flow<Outcome<T>> = flow {

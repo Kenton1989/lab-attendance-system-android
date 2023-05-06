@@ -1,6 +1,8 @@
 package sg.edu.ntu.scse.labattendancesystem.ui.main
 
+import android.app.AlertDialog
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -10,9 +12,9 @@ import androidx.fragment.app.activityViewModels
 import sg.edu.ntu.scse.labattendancesystem.R
 import sg.edu.ntu.scse.labattendancesystem.databinding.FragmentSessionDetailBinding
 import sg.edu.ntu.scse.labattendancesystem.domain.models.Attendance
+import sg.edu.ntu.scse.labattendancesystem.domain.models.Outcome
 import sg.edu.ntu.scse.labattendancesystem.viewmodels.ViewModelFactory
 import sg.edu.ntu.scse.labattendancesystem.viewmodels.main.MainViewModel
-import kotlin.reflect.jvm.internal.impl.util.Check
 
 class SessionDetailFragment : Fragment() {
     private var _binding: FragmentSessionDetailBinding? = null
@@ -78,11 +80,39 @@ class SessionDetailFragment : Fragment() {
     }
 
     private fun handleStudentAttendanceClicked(attendance: Attendance) {
-        viewModel.studentCheckIn(attendance)
+        Log.d(TAG, "handle student check in")
+
+        val dialog = AlertDialog.Builder(requireContext())
+            .setTitle("Check In...")
+            .setMessage("Please wait for check in...")
+            .setCancelable(false)
+            .create()
+        dialog.setCanceledOnTouchOutside(false)
+        dialog.show()
+
+        viewModel.studentCheckIn(attendance).observe(viewLifecycleOwner) {
+            if (it != Outcome.Loading) {
+                dialog.dismiss()
+            }
+        }
     }
 
     private fun handleTeacherAttendanceClicked(attendance: Attendance) {
-        viewModel.teacherCheckIn(attendance)
+        Log.d(TAG, "handle teacher check in")
+
+        val dialog = AlertDialog.Builder(requireContext())
+            .setTitle("Check In...")
+            .setMessage("Please wait for check in...")
+            .setCancelable(false)
+            .create()
+        dialog.setCanceledOnTouchOutside(false)
+        dialog.show()
+
+        viewModel.teacherCheckIn(attendance).observe(viewLifecycleOwner) {
+            if (it != Outcome.Loading) {
+                dialog.dismiss()
+            }
+        }
     }
 
 
@@ -93,6 +123,6 @@ class SessionDetailFragment : Fragment() {
 
 
     companion object {
-        private const val MAX_TITLE_LENGTH = 45
+        private val TAG = SessionDetailFragment::class.java.simpleName
     }
 }

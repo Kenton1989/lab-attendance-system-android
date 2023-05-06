@@ -43,30 +43,22 @@ enum class AttendanceState(val value: String) {
 
     companion object {
         fun fromValue(value: String) = when (value) {
-            ABSENT.value -> ABSENT;
-            ATTEND.value -> ATTEND;
-            LATE.value -> LATE;
+            ABSENT.value -> ABSENT
+            ATTEND.value -> ATTEND
+            LATE.value -> LATE
             else -> throw IllegalArgumentException("unknown attendance state value")
         }
     }
 }
 
 data class Attendance(
-    val localId: Int,
+//    val localId: Int,
     val id: Int?,
     val session: Session?,
     val sessionId: Int,
     val attender: User,
     val seat: String?,
     val checkInState: AttendanceState,
-    val checkInDatetime: ZonedDateTime,
-    val lastModify: ZonedDateTime,
-)
-
-data class NewAttendance(
-    val sessionId: Int,
-    val attenderId: Int,
-    val checkInState: String,
-    val checkInDatetime: ZonedDateTime,
+    val checkInDatetime: ZonedDateTime?,
     val lastModify: ZonedDateTime,
 )

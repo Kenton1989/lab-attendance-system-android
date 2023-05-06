@@ -8,7 +8,6 @@ import sg.edu.ntu.scse.labattendancesystem.LabAttendanceSystemApplication
 import sg.edu.ntu.scse.labattendancesystem.domain.models.*
 import sg.edu.ntu.scse.labattendancesystem.network.UnauthenticatedError
 import java.time.ZonedDateTime
-import kotlin.math.log
 
 class MainRepository(
     app: LabAttendanceSystemApplication,
@@ -28,23 +27,19 @@ class MainRepository(
     private val sessionManager get() = app.sessionManager
     private val mainDb = app.database.mainDao()
     private val loginHistory get() = app.loginHistoryStore
-    private var syncer: DataSyncer = DataSyncer(
-        app.apiServices.main,
-        mainDb,
-        workManager
-    )
+    private lateinit var syncer: DataSyncer
     private lateinit var labCache: Lab
     private var roomCache: Int? = null
 
-    val online: Flow<Boolean> = syncer.lastNetworkRequestSucceeded
-    val syncing: Flow<Boolean> = syncer.syncing
+    val online: Flow<Boolean> get() = syncer.lastNetworkRequestSucceeded
+    val syncing: Flow<Boolean> get() = syncer.syncing
 
     val activeSessions: Flow<List<Session>>
         get() = mainDb.getActiveBriefSessions(
             labId = labCache.id,
             roomNo = roomCache,
-            startTimeBefore = ZonedDateTime.now().plusYears(1),
-            endTimeAfter = ZonedDateTime.now().minusYears(1),
+//            startTimeBefore = ZonedDateTime.now().plusYears(1),
+//            endTimeAfter = ZonedDateTime.now().minusYears(1),
         ).map { l ->
             Log.d(TAG, "get ${l.size} sessions")
             l.map { it.toDomainModel() }
@@ -60,15 +55,18 @@ class MainRepository(
         Log.d(TAG, "lab cache init done $labCache")
 
         syncer = DataSyncer(
-            app.apiServices.main,
-            mainDb,
+            app,
             workManager,
             initLabId = labCache.id
         )
-        syncer.labId = labCache.id
         syncer.syncAllOnce()
         syncer.startPeriodicSyncAll()
         Log.d(TAG, "main repo init done")
+    }
+
+    override fun cleanUp() {
+        super.cleanUp()
+        syncer.stopPeriodicSyncAll()
     }
 
     fun refreshData() {
@@ -76,7 +74,7 @@ class MainRepository(
     }
 
     fun verifyLogoutCredential(password: String): Flow<Outcome<Unit>> {
-        return loadFromNet {
+        return asyncLoad {
             val username = loginHistory.lastLoginUsername.first()!!
             if (!sessionManager.verifyCredential(username, password)) {
                 throw UnauthenticatedError()
@@ -85,30 +83,14 @@ class MainRepository(
     }
 
     fun logout(): Flow<Outcome<Unit>> {
-        return loadFromNet {
+        return asyncLoad {
             sessionManager.logout()
         }
-    }
-
-    fun getBriefSession(sessionId: Int): Flow<Session> {
-        return mainDb.getBriefSession(sessionId)
-            .onEach { Log.d(TAG, "getBriefSession(id=$sessionId): got $it") }
-            .filterNotNull().map {
-                it.toDomainModel()
-            }
     }
 
     fun getDetailSession(sessionId: Int): Flow<Session> {
         return mainDb.getDetailSession(sessionId)
             .onEach { Log.d(TAG, "getDetailSession(id=$sessionId): got $it") }
-            .filterNotNull().map {
-                it.toDomainModel()
-            }
-    }
-
-    fun getDetailGroup(groupId: Int): Flow<Group> {
-        return mainDb.getDetailGroup(groupId)
-            .onEach { Log.d(TAG, "getDetailGroup(id=$groupId): got $it") }
             .filterNotNull().map {
                 it.toDomainModel()
             }
@@ -126,5 +108,29 @@ class MainRepository(
             .map { l ->
                 l.map { it.toDomainModel() }
             }
+    }
+
+    fun updateStudentAttendance(attendance: Attendance): Flow<Outcome<Unit>> {
+        return asyncLoad {
+            val newAttendance =
+                attendance.copy(lastModify = ZonedDateTime.now() - LAST_MODIFY_SHIFT)
+            Log.d(TAG, "new student check in $newAttendance")
+            mainDb.insertOrUpdateStudentAttendances(listOf(newAttendance.toDbStudentAttendance()))
+            Log.d(TAG, "start syncing student attendance after update")
+            syncer.syncStudentAttendance()
+            Log.d(TAG, "student att syncing done after update")
+        }
+    }
+
+    fun updateTeacherAttendance(attendance: Attendance): Flow<Outcome<Unit>> {
+        return asyncLoad {
+            val newAttendance =
+                attendance.copy(lastModify = ZonedDateTime.now() - LAST_MODIFY_SHIFT)
+            Log.d(TAG, "new teacher check in $newAttendance")
+            mainDb.insertOrUpdateTeacherAttendances(listOf(newAttendance.toDbTeacherAttendance()))
+            Log.d(TAG, "start syncing teacher attendance after update")
+            syncer.syncTeacherAttendance()
+            Log.d(TAG, "teacher att syncing done after update")
+        }
     }
 }

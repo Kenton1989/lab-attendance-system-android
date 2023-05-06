@@ -20,6 +20,7 @@ import java.time.ZonedDateTime
 class MainViewModel(private val app: LabAttendanceSystemApplication) : BaseViewModel() {
     companion object {
         val TAG: String = MainViewModel::class.java.simpleName
+//        const val NO_LOCAL_ID: Int = -1
     }
 
 
@@ -93,7 +94,7 @@ class MainViewModel(private val app: LabAttendanceSystemApplication) : BaseViewM
     }
 
     fun updateSelectedSession(sessionId: Int?) {
-        if (sessionId == selectedSession.value?.id) return;
+        if (sessionId == selectedSession.value?.id) return
 
         if (sessionId != null) {
             val selectedSessionFlow = repo.getDetailSession(sessionId)
@@ -119,12 +120,16 @@ class MainViewModel(private val app: LabAttendanceSystemApplication) : BaseViewM
         return repo.logout().asLiveData()
     }
 
-    fun studentCheckIn(attendance: Attendance) {
-
+    fun studentCheckIn(attendance: Attendance): LiveData<Outcome<Unit>> {
+        val newAttendance = attendance.copy(checkInState = AttendanceState.ATTEND)
+        Log.d(TAG, "new student check in $newAttendance")
+        return repo.updateStudentAttendance(newAttendance).asLiveData()
     }
 
-    fun teacherCheckIn(attendance: Attendance) {
-
+    fun teacherCheckIn(attendance: Attendance): LiveData<Outcome<Unit>> {
+        val newAttendance = attendance.copy(checkInState = AttendanceState.ATTEND)
+        Log.d(TAG, "new teacher check in $newAttendance")
+        return repo.updateTeacherAttendance(newAttendance).asLiveData()
     }
 
     private fun getCompleteStudentAttendanceOfSession(
@@ -138,8 +143,8 @@ class MainViewModel(private val app: LabAttendanceSystemApplication) : BaseViewM
             val newRecordTime = ZonedDateTime.now()
 //            Log.d(TAG, "combining student attendance")
             session.group.students!!.map {
-                recordOfStudent[it.id]?.copy(seat = it.seat) ?: Attendance(
-                    localId = 0,
+                val res = recordOfStudent[it.student.id]?.copy(seat = it.seat) ?: Attendance(
+//                    localId = 0,
                     id = null,
                     session = session,
                     sessionId = session.id,
@@ -149,6 +154,7 @@ class MainViewModel(private val app: LabAttendanceSystemApplication) : BaseViewM
                     checkInDatetime = newRecordTime,
                     lastModify = newRecordTime,
                 )
+                res
             }
         }
     }
@@ -165,7 +171,7 @@ class MainViewModel(private val app: LabAttendanceSystemApplication) : BaseViewM
 //            Log.d(TAG, "combining teacher attendance")
             session.group.teachers!!.map {
                 recordOfStudent[it.id] ?: Attendance(
-                    localId = 0,
+//                    localId = 0,
                     id = null,
                     session = session,
                     sessionId = session.id,

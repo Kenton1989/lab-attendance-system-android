@@ -11,7 +11,7 @@ fun DbUser.toDomainModel(): User =
 
 fun StudentAttendanceWithAttender.toDomainModel(): Attendance =
     Attendance(
-        localId = data.localId,
+//        localId = data.localId,
         id = data.id,
         session = null,
         sessionId = data.sessionId,
@@ -24,7 +24,7 @@ fun StudentAttendanceWithAttender.toDomainModel(): Attendance =
 
 fun TeacherAttendanceWithAttender.toDomainModel(): Attendance =
     Attendance(
-        localId = data.localId,
+//        localId = data.localId,
         id = data.id,
         session = null,
         sessionId = data.sessionId,
@@ -33,6 +33,26 @@ fun TeacherAttendanceWithAttender.toDomainModel(): Attendance =
         checkInState = AttendanceState.fromValue(data.checkInState),
         checkInDatetime = data.checkInDatetime,
         lastModify = data.lastModify,
+    )
+
+fun Attendance.toDbStudentAttendance(): DbStudentAttendance =
+    DbStudentAttendance(
+        id = id,
+        sessionId = sessionId,
+        attenderId = attender.id,
+        checkInState = checkInState.value,
+        checkInDatetime = checkInDatetime,
+        lastModify = lastModify,
+    )
+
+fun Attendance.toDbTeacherAttendance(): DbTeacherAttendance =
+    DbTeacherAttendance(
+        id = id,
+        sessionId = sessionId,
+        attenderId = attender.id,
+        checkInState = checkInState.value,
+        checkInDatetime = checkInDatetime,
+        lastModify = lastModify,
     )
 
 fun DbCourse.toDomainModel(): Course =

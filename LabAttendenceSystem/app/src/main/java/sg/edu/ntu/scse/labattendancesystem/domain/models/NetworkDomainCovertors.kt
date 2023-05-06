@@ -44,21 +44,13 @@ fun SessionResp.toDomainModel() = Session(
 )
 
 fun AttendanceResp.toDomainModel() = Attendance(
-    localId = -1,
+//    localId = -1,
     id = id!!,
     session = session!!.toDomainModel(),
     sessionId = session.id!!,
     attender = attender!!.toDomainModel(),
     seat = null,
     checkInState = AttendanceState.fromValue(checkInState!!),
-    checkInDatetime = checkInDatetime!!,
-    lastModify = lastModify!!,
-)
-
-fun NewAttendance.toNetworkModel() = NewAttendanceReq(
-    sessionId = sessionId,
-    attenderId = attenderId,
-    checkInState = checkInState,
     checkInDatetime = checkInDatetime,
-    lastModify = lastModify,
+    lastModify = lastModify!!,
 )

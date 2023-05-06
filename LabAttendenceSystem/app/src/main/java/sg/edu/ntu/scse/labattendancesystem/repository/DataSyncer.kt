@@ -4,37 +4,34 @@ import android.content.Context
 import android.util.Log
 import androidx.work.*
 import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.withTimeout
+import sg.edu.ntu.scse.labattendancesystem.LabAttendanceSystemApplication
 import sg.edu.ntu.scse.labattendancesystem.database.MainDao
 import sg.edu.ntu.scse.labattendancesystem.database.models.DbGroupStudent
 import sg.edu.ntu.scse.labattendancesystem.database.models.DbGroupTeacher
 import sg.edu.ntu.scse.labattendancesystem.domain.models.toDatabaseModel
-import sg.edu.ntu.scse.labattendancesystem.domain.models.toDbStudentAttendance
-import sg.edu.ntu.scse.labattendancesystem.domain.models.toDbTeacherAttendance
 import sg.edu.ntu.scse.labattendancesystem.network.api.MainApi
 import sg.edu.ntu.scse.labattendancesystem.network.models.*
 import java.time.*
 import java.time.temporal.ChronoUnit
 
 class DataSyncer(
-    private val api: MainApi,
-    private val db: MainDao,
+    private val app: LabAttendanceSystemApplication,
     private val workManager: WorkManager,
-    initLabId: Int? = null,
+    initLabId: Int,
     private val netRequestTimeoutMillis: Long = 10000,
     // TODO: change back to normal value
-    private val cacheExpireAfterTimeRange: Duration = Duration.ofDays(7),
-    private val cacheInAdvanceTimeRange: Duration = Duration.ofDays(7),
+    private val cacheExpireAfterTimeRange: Duration = Duration.ofDays(3),
+    private val cacheInAdvanceTimeRange: Duration = Duration.ofDays(3),
     private val syncInterval: Duration = Duration.ofMinutes(15),
     onlineInitVal: Boolean = true,
 ) {
     companion object {
-        val TAG: String = DataSyncer::class.java.simpleName;
-        const val PERIODIC_SYNC_WORK_NAME = "syncing_session_every_several_minutes";
-        const val SYNC_ONCE_WORK_NAME = "syncing_session_once";
-        private const val SYNCING_LAB = "syncing_lab";
+        val TAG: String = DataSyncer::class.java.simpleName
+        private const val PERIODIC_SYNC_WORK_NAME = "syncing_session_every_several_minutes"
+        private const val SYNC_ONCE_WORK_NAME = "syncing_session_once"
+        private const val SYNCING_LAB = "syncing_lab"
 
         private val labSyncer = mutableMapOf<Int, DataSyncer>()
         fun getSyncerOfLab(labId: Int): DataSyncer {
@@ -43,6 +40,11 @@ class DataSyncer(
         }
     }
 
+    private val api: MainApi get() = app.apiServices.main
+    private val db: MainDao get() = app.database.mainDao()
+    private val studentAttendanceSyncer = AttendanceSyncer.Student(app, initLabId)
+    private val teacherAttendanceSyncer = AttendanceSyncer.Teacher(app, initLabId)
+
     private val _lastNetworkRequestSucceeded = MutableStateFlow(onlineInitVal)
     val lastNetworkRequestSucceeded: Flow<Boolean>
         get() = _lastNetworkRequestSucceeded.onEach {
@@ -50,9 +52,10 @@ class DataSyncer(
         }
 
     private val _syncing = MutableStateFlow(false)
-    val syncing: Flow<Boolean> get() = _syncing.onEach {
-        Log.d(TAG, "new DataSyncer.syncing: $it")
-    }
+    val syncing: Flow<Boolean>
+        get() = _syncing.onEach {
+            Log.d(TAG, "new DataSyncer.syncing: $it")
+        }
 
     var labId: Int? = null
         set(value) {
@@ -86,7 +89,10 @@ class DataSyncer(
 
     suspend fun syncAll() {
         withSyncFlag {
+            clearExpiredSession()
             saveAllSessionsOfCurrentLab()
+            studentAttendanceSyncer.sync()
+            teacherAttendanceSyncer.sync()
             Log.d(TAG, "all sync job done")
         }
     }
@@ -127,40 +133,20 @@ class DataSyncer(
         workManager.cancelUniqueWork(PERIODIC_SYNC_WORK_NAME)
     }
 
-    suspend fun syncSession(sessionId: Int) {
-        sync(
-            download = { api.getSession(sessionId) },
-            save = { saveSessions(listOf(it)) }
-        )
+    suspend fun syncStudentAttendance() {
+        studentAttendanceSyncer.sync()
     }
 
-    suspend fun syncGroup(groupId: Int) {
-        sync(
-            download = { api.getGroup(groupId) },
-            save = { saveGroups(listOf(it)) }
-        )
-    }
-
-    suspend fun syncStudentAttendanceOfSession(sessionId: Int) {
-        sync(
-            download = { api.getStudentAttendances(sessionId = sessionId).results },
-            save = { l -> db.insertOrUpdateStudentAttendances(l.map { it.toDbStudentAttendance() }) }
-        )
-    }
-
-    suspend fun syncTeacherAttendanceOfSession(sessionId: Int) {
-        sync(
-            download = { api.getTeacherAttendances(sessionId = sessionId).results },
-            save = { l -> db.insertOrUpdateStudentAttendances(l.map { it.toDbTeacherAttendance() }) }
-        )
+    suspend fun syncTeacherAttendance() {
+        teacherAttendanceSyncer.sync()
     }
 
     private suspend fun <T> withSyncFlag(f: suspend () -> T): T {
         _syncing.value = true
-        Log.d(TAG, "set sync flag to true");
+        Log.d(TAG, "set sync flag to true")
 
         return try {
-            f();
+            f()
         } finally {
             Log.d(TAG, "finally set sync flag to false")
             _syncing.value = false
@@ -182,6 +168,12 @@ class DataSyncer(
                 onError(e)
             }
         }
+    }
+
+    private fun clearExpiredSession() {
+        Log.d(TAG, "clearExpiredSession")
+        val expireTime = ZonedDateTime.now() - cacheExpireAfterTimeRange
+        db.deleteExpiredSession(expireTime)
     }
 
     private suspend fun saveAllSessionsOfCurrentLab(): Boolean {
@@ -239,14 +231,14 @@ class DataSyncer(
         return true
     }
 
-    private suspend fun saveCourses(courses: List<CourseResp>): Boolean {
+    private fun saveCourses(courses: List<CourseResp>): Boolean {
         Log.d(TAG, "started downloading courses")
         db.insertCourses(courses.map { it.toDatabaseModel() })
         Log.d(TAG, "finished downloading courses")
         return true
     }
 
-    private suspend fun saveLabs(labs: List<LabResp>): Boolean {
+    private fun saveLabs(labs: List<LabResp>): Boolean {
         Log.d(TAG, "started downloading labs")
         db.insertUsers(labs.map { it.toUserResp().toDatabaseModel() })
         db.insertLabs(labs.map { it.toDatabaseModel() })
