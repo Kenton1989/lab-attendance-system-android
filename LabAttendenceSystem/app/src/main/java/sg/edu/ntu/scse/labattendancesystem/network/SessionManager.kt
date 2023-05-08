@@ -8,6 +8,7 @@ import retrofit2.HttpException
 import sg.edu.ntu.scse.labattendancesystem.network.api.AuthApi
 import sg.edu.ntu.scse.labattendancesystem.network.models.LabResp
 import sg.edu.ntu.scse.labattendancesystem.network.models.UserResp
+import java.net.ConnectException
 import java.net.HttpURLConnection
 
 class SessionManager(
@@ -92,8 +93,10 @@ class SessionManager(
                     storeLoginHistory = storeLoginHistory
                 )
             }
-        } catch (e: TimeoutCancellationException) {
-            if (tryCachedPasswordIfTimeout) {
+        } catch (e: Exception) {
+            if ((e is TimeoutCancellationException || e is ConnectException) &&
+                tryCachedPasswordIfTimeout
+            ) {
                 if (username == loginHistory.lastLoginUsername.first() &&
                     loginHistory.verifyLastLoginPassword(password)
                 ) {

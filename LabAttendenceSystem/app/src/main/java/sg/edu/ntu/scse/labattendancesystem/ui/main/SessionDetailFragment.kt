@@ -64,6 +64,7 @@ class SessionDetailFragment : Fragment() {
             this,
             binding.studentCheckInTableContent,
             viewModel.selectedStudentAttendances,
+            highlightCompulsory = true,
         ) {
             handleStudentAttendanceClicked(it)
         }

@@ -1,6 +1,8 @@
 package sg.edu.ntu.scse.labattendancesystem.ui.main
 
+import android.app.Activity
 import android.app.AlertDialog
+import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -23,6 +25,7 @@ import androidx.navigation.ui.setupWithNavController
 import sg.edu.ntu.scse.labattendancesystem.R
 import sg.edu.ntu.scse.labattendancesystem.databinding.ActivityMainBinding
 import sg.edu.ntu.scse.labattendancesystem.domain.models.Outcome
+import sg.edu.ntu.scse.labattendancesystem.ui.login.LoginActivity
 import sg.edu.ntu.scse.labattendancesystem.viewmodels.ViewModelFactory
 import sg.edu.ntu.scse.labattendancesystem.viewmodels.main.MainViewModel
 
@@ -190,7 +193,7 @@ class MainActivity : AppCompatActivity() {
         val dialog = AlertDialog.Builder(this)
             .setTitle("Logout Success")
             .setMessage("The app will be closed.")
-            .setPositiveButton("OK") { _, _ -> finish() }
+            .setPositiveButton("OK") { _, _ -> goToLogin() }
             .create()
         dialog.show()
     }
@@ -228,4 +231,12 @@ class MainActivity : AppCompatActivity() {
         syncAction.setIcon(R.drawable.ic_sync_error_white)
         syncActionView.clearAnimation()
     }
+
+    private fun goToLogin() {
+        val intent = Intent(this, LoginActivity::class.java)
+        startActivity(intent)
+        setResult(Activity.RESULT_OK)
+        finish()
+    }
+
 }

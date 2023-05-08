@@ -143,17 +143,18 @@ class MainViewModel(private val app: LabAttendanceSystemApplication) : BaseViewM
             val newRecordTime = ZonedDateTime.now()
 //            Log.d(TAG, "combining student attendance")
             session.group.students!!.map {
-                val res = recordOfStudent[it.student.id]?.copy(seat = it.seat) ?: Attendance(
+                val res = recordOfStudent[it.student.id]?.copy(session = session, seat = it.seat)
+                    ?: Attendance(
 //                    localId = 0,
-                    id = null,
-                    session = session,
-                    sessionId = session.id,
-                    attender = it.student,
-                    seat = it.seat,
-                    checkInState = AttendanceState.ABSENT,
-                    checkInDatetime = newRecordTime,
-                    lastModify = newRecordTime,
-                )
+                        id = null,
+                        session = session,
+                        sessionId = session.id,
+                        attender = it.student,
+                        seat = it.seat,
+                        checkInState = AttendanceState.ABSENT,
+                        checkInDatetime = newRecordTime,
+                        lastModify = newRecordTime,
+                    )
                 res
             }
         }
@@ -170,7 +171,7 @@ class MainViewModel(private val app: LabAttendanceSystemApplication) : BaseViewM
             val newRecordTime = ZonedDateTime.now()
 //            Log.d(TAG, "combining teacher attendance")
             session.group.teachers!!.map {
-                recordOfStudent[it.id] ?: Attendance(
+                recordOfStudent[it.id]?.copy(session = session) ?: Attendance(
 //                    localId = 0,
                     id = null,
                     session = session,

@@ -7,6 +7,7 @@ import retrofit2.HttpException
 import retrofit2.Response
 import sg.edu.ntu.scse.labattendancesystem.LabAttendanceSystemApplication
 import sg.edu.ntu.scse.labattendancesystem.domain.models.Outcome
+import java.net.ConnectException
 import java.net.HttpURLConnection
 
 abstract class BaseRepository(
@@ -74,6 +75,17 @@ abstract class BaseRepository(
                     val parsedError: String = error.charStream().readText()
                     emit(Outcome.Failure(e, parsedError, e.code()))
                 }
+            }
+            is ConnectException -> {
+                Log.e(TAG, e.toString())
+                emit(
+                    Outcome.Failure(
+                        e,
+                        "cannot connect to server",
+                        HttpURLConnection.HTTP_BAD_GATEWAY
+                    )
+                )
+
             }
             else -> {
                 Log.e(TAG, "Wrapped unhandled exception $e")

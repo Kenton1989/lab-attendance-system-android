@@ -3,6 +3,7 @@ package sg.edu.ntu.scse.labattendancesystem.repository
 import android.util.Log
 import kotlinx.coroutines.flow.MutableStateFlow
 import retrofit2.HttpException
+import sg.edu.ntu.scse.labattendancesystem.domain.models.Outcome
 import java.time.Duration
 import java.time.ZonedDateTime
 
@@ -117,6 +118,13 @@ abstract class TimestampBasedSyncer<RemoteT, LocalT>(
                 } catch (e: HttpException) {
                     if (e.code() < 500) {
                         Log.d(TAG, "failed to insert, delete local $localItem, $e")
+                        val response = e.response()
+                        response?.errorBody()?.let { error ->
+                            error.close()
+                            val parsedError: String = error.charStream().readText()
+                            Log.d(TAG, "err body $parsedError")
+                        }
+
                         deleteLocalItem(localItem)
                     } else {
                         throw e
@@ -128,6 +136,13 @@ abstract class TimestampBasedSyncer<RemoteT, LocalT>(
                 } catch (e: HttpException) {
                     if (e.code() < 500) {
                         Log.d(TAG, "failed to update, overwrite local $localItem, $e")
+                        val response = e.response()
+                        response?.errorBody()?.let { error ->
+                            error.close()
+                            val parsedError: String = error.charStream().readText()
+                            Log.d(TAG, "err body $parsedError")
+                        }
+
                         updateToLocalItem(listOf(remoteItem))
                     } else {
                         throw e

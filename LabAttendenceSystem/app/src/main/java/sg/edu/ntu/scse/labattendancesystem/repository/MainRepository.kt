@@ -38,8 +38,6 @@ class MainRepository(
         get() = mainDb.getActiveBriefSessions(
             labId = labCache.id,
             roomNo = roomCache,
-//            startTimeBefore = ZonedDateTime.now().plusYears(1),
-//            endTimeAfter = ZonedDateTime.now().minusYears(1),
         ).map { l ->
             Log.d(TAG, "get ${l.size} sessions")
             l.map { it.toDomainModel() }
@@ -116,6 +114,7 @@ class MainRepository(
                 attendance.copy(lastModify = ZonedDateTime.now() - LAST_MODIFY_SHIFT)
             Log.d(TAG, "new student check in $newAttendance")
             mainDb.insertOrUpdateStudentAttendances(listOf(newAttendance.toDbStudentAttendance()))
+            delay(100)
             Log.d(TAG, "start syncing student attendance after update")
             syncer.syncStudentAttendance()
             Log.d(TAG, "student att syncing done after update")
@@ -128,6 +127,7 @@ class MainRepository(
                 attendance.copy(lastModify = ZonedDateTime.now() - LAST_MODIFY_SHIFT)
             Log.d(TAG, "new teacher check in $newAttendance")
             mainDb.insertOrUpdateTeacherAttendances(listOf(newAttendance.toDbTeacherAttendance()))
+            delay(100)
             Log.d(TAG, "start syncing teacher attendance after update")
             syncer.syncTeacherAttendance()
             Log.d(TAG, "teacher att syncing done after update")

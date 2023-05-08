@@ -65,13 +65,17 @@ interface MainDao {
 
     @Transaction
     @Query(
-        "SELECT session_tb.* FROM session_tb  JOIN group_tb ON s_group_id = g_id  WHERE s_start_datetime <= :startTimeBefore  AND :endTimeAfter < s_end_datetime  AND (:roomNo IS NULL OR :roomNo == g_room_no) AND (:labId IS NULL OR :labId == g_lab_id)"
+        "SELECT session_tb.* FROM session_tb  JOIN group_tb ON s_group_id = g_id " +
+                "WHERE s_start_datetime <= :startTimeBefore  " +
+                "AND :endTimeAfter < s_end_datetime  " +
+                "AND (:roomNo IS NULL OR :roomNo == g_room_no) " +
+                "AND (:labId IS NULL OR :labId == g_lab_id)"
     )
     fun getActiveBriefSessions(
         labId: Int? = null,
         roomNo: Int? = null,
         endTimeAfter: ZonedDateTime = ZonedDateTime.now(),
-        startTimeBefore: ZonedDateTime = ZonedDateTime.now().minusMinutes(15),
+        startTimeBefore: ZonedDateTime = ZonedDateTime.now(),
     ): Flow<List<SessionWithCourseGroup>>
 
     @Query("SELECT EXISTS(SELECT * FROM session_tb WHERE s_id = :id);")

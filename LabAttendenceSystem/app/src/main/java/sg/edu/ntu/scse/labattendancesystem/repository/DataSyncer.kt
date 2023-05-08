@@ -13,6 +13,7 @@ import sg.edu.ntu.scse.labattendancesystem.database.models.DbGroupTeacher
 import sg.edu.ntu.scse.labattendancesystem.domain.models.toDatabaseModel
 import sg.edu.ntu.scse.labattendancesystem.network.api.MainApi
 import sg.edu.ntu.scse.labattendancesystem.network.models.*
+import java.net.ConnectException
 import java.time.*
 import java.time.temporal.ChronoUnit
 
@@ -51,11 +52,11 @@ class DataSyncer(
             Log.d(TAG, "new DataSyncer.lastNetworkRequestSucceeded: $it")
         }
 
-    private val _syncing = MutableStateFlow(false)
+    private val _syncingCounter = MutableStateFlow(0)
     val syncing: Flow<Boolean>
-        get() = _syncing.onEach {
+        get() = _syncingCounter.onEach {
             Log.d(TAG, "new DataSyncer.syncing: $it")
-        }
+        }.map { it > 0 }
 
     var labId: Int? = null
         set(value) {
@@ -91,8 +92,8 @@ class DataSyncer(
         withSyncFlag {
             clearExpiredSession()
             saveAllSessionsOfCurrentLab()
-            studentAttendanceSyncer.sync()
-            teacherAttendanceSyncer.sync()
+            syncStudentAttendance()
+            syncTeacherAttendance()
             Log.d(TAG, "all sync job done")
         }
     }
@@ -104,13 +105,8 @@ class DataSyncer(
 
         val work = OneTimeWorkRequestBuilder<SyncWorker>().setInputData(data).build()
 
-        if (_syncing.compareAndSet(false, true)) {
-            Log.d(TAG, "syncAllOnce: running")
-            workManager.beginUniqueWork(SYNC_ONCE_WORK_NAME, ExistingWorkPolicy.KEEP, work)
-                .enqueue()
-        } else {
-            Log.d(TAG, "syncAllOnce: other syncing job is running")
-        }
+        workManager.beginUniqueWork(SYNC_ONCE_WORK_NAME, ExistingWorkPolicy.KEEP, work)
+            .enqueue()
     }
 
     fun startPeriodicSyncAll() {
@@ -134,22 +130,36 @@ class DataSyncer(
     }
 
     suspend fun syncStudentAttendance() {
-        studentAttendanceSyncer.sync()
+        withSyncFlag {
+            safeNetReq {
+                studentAttendanceSyncer.sync()
+            }
+        }
     }
 
     suspend fun syncTeacherAttendance() {
-        teacherAttendanceSyncer.sync()
+        withSyncFlag {
+            safeNetReq {
+                teacherAttendanceSyncer.sync()
+            }
+        }
     }
 
     private suspend fun <T> withSyncFlag(f: suspend () -> T): T {
-        _syncing.value = true
-        Log.d(TAG, "set sync flag to true")
+        var counter = _syncingCounter.value
+        while (!_syncingCounter.compareAndSet(counter, counter + 1)) {
+            counter = _syncingCounter.value
+        }
+        Log.d(TAG, "increase sync counter to ${counter + 1}")
 
         return try {
             f()
         } finally {
-            Log.d(TAG, "finally set sync flag to false")
-            _syncing.value = false
+            var counter = _syncingCounter.value
+            while (!_syncingCounter.compareAndSet(counter, counter - 1)) {
+                counter = _syncingCounter.value
+            }
+            Log.d(TAG, "decrease sync counter to ${counter - 1}")
         }
     }
 
@@ -279,9 +289,17 @@ class DataSyncer(
                 result
             }
         } catch (e: TimeoutCancellationException) {
-            Log.d(TAG, "network timeout, maybe offline")
+            Log.d(TAG, "network timeout, maybe offline $e")
             _lastNetworkRequestSucceeded.value = false
             null
+        } catch (e: ConnectException) {
+            Log.d(TAG, "failed to connect, maybe offline $e")
+            _lastNetworkRequestSucceeded.value = false
+            null
+        } catch (e: Exception) {
+            Log.d(TAG, "unknown error")
+            _lastNetworkRequestSucceeded.value = false
+            throw e
         }
     }
 }
